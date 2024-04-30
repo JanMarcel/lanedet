@@ -51,15 +51,14 @@ conda activate lanedet
 ### Install dependencies
 
 ```Shell
-# Install pytorch firstly, the cudatoolkit version should be same in your system.
-
-conda install pytorch==1.8.0 torchvision==0.9.0 cudatoolkit=10.1 -c pytorch
-
-# Or you can install via pip
-pip install torch==1.8.0 torchvision==0.9.0
+# Install via pip
+pip install torch==1.8.0+cu111 torchvision==0.9.0+cu111 torchaudio==0.8.0 -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install python packages
 python setup.py build develop
+
+# if setup fails, try the following. After that retry setup
+pip install -r requirements.txt
 ```
 
 ### Data preparation
