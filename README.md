@@ -37,7 +37,7 @@ Please refer to [INSTALL.md](INSTALL.md) for installation.
 
 ### Clone this repository
 ```
-git clone https://github.com/turoad/lanedet.git
+git clone https://github.com/JanMarcel/lanedet.git
 ```
 We call this directory as `$LANEDET_ROOT`
 
