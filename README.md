@@ -67,6 +67,9 @@ pip install -r requirements.txt
 
 Download [CULane](https://xingangpan.github.io/projects/CULane.html). Then extract them to `$CULANEROOT`. Create link to `data` directory.
 
+`$CULANEROOT` must be absolute path NOT relative! e.g.: 
+`ln -s ~/ei-alle/lanedet/data/TUSimple/ data/TUSimple`
+
 ```Shell
 cd $LANEDET_ROOT
 mkdir -p data
