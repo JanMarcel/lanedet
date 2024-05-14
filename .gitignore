@@ -18,7 +18,7 @@ output.txt
 .DS_Store
 tmp.*
 *.pt
-*.pth
+# *.pth
 *.un~
 *.so
 build
