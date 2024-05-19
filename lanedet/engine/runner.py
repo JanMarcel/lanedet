@@ -85,21 +85,25 @@ class Runner(object):
                 self.recorder.record('train')
 
     def train(self):
-        self.recorder.logger.info('Build train loader...')
-        train_loader = build_dataloader(self.cfg.dataset.train, self.cfg, is_train=True)
+        try:
+            self.recorder.logger.info('Build train loader...')
+            train_loader = build_dataloader(self.cfg.dataset.train, self.cfg, is_train=True)
 
-        self.recorder.logger.info('Start training...')
-        for epoch in range(self.cfg.epochs):
-            self.recorder.epoch = epoch
-            self.train_epoch(epoch, train_loader)
-            if (epoch + 1) % self.cfg.save_ep == 0 or epoch == self.cfg.epochs - 1:
-                self.save_ckpt()
-            if (epoch + 1) % self.cfg.eval_ep == 0 or epoch == self.cfg.epochs - 1:
-                self.validate()
-            if self.recorder.step >= self.cfg.total_iter:
-                break
-            if self.cfg.lr_update_by_epoch:
-                self.scheduler.step()
+            self.recorder.logger.info('Start training...')
+            for epoch in range(self.cfg.epochs):
+                self.recorder.epoch = epoch
+                self.train_epoch(epoch, train_loader)
+                if (epoch + 1) % self.cfg.save_ep == 0 or epoch == self.cfg.epochs - 1:
+                    self.save_ckpt()
+                if (epoch + 1) % self.cfg.eval_ep == 0 or epoch == self.cfg.epochs - 1:
+                    self.validate()
+                if self.recorder.step >= self.cfg.total_iter:
+                    break
+                if self.cfg.lr_update_by_epoch:
+                    self.scheduler.step()
+        except Exception as e: 
+            self.recorder.logger.error("Error while Training: ")
+            self.recorder.logger.error(e)
 
     def validate(self):
         if not self.val_loader:
