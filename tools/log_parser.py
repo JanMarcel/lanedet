@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 import regex
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 class Log:
     def __init__(self, log_lines: list):
@@ -14,12 +15,22 @@ class Log:
     def plot(self):
         x = []
         y = []
+        y1 = []
+
+        first: bool = True
         for line in self.log_lines:
             if isinstance(line, EpochLine):
+                if first:
+                    first = False
+                    continue
                 x.append(line.timestamp)
                 y.append(line.seg_loss)
+                y1.append(line.exist_loss)
     
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%HH'))
+        plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=2))
         plt.plot(x, y)
+        plt.plot(x, y1)
         plt.waitforbuttonpress()
 
 class LogLine:
@@ -39,7 +50,7 @@ class LogLine:
         if msg.startswith("epoch:"):
             return EpochLine(logline)
         else:
-            logline
+            return logline
 
     def __init__(self, timestamp: datetime, module: str, level: str, msg: str):       
         self.timestamp = timestamp
