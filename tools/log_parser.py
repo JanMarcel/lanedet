@@ -2,6 +2,7 @@ import os
 import time
 from datetime import datetime
 import regex
+import matplotlib.pyplot as plt
 
 class Log:
     def __init__(self, log_lines: list):
@@ -9,6 +10,17 @@ class Log:
         for line in log_lines:
             if regex.search(LogLine.timestamp_pattern, line):
                 self.log_lines.append(LogLine.from_line(line))
+    
+    def plot(self):
+        x = []
+        y = []
+        for line in self.log_lines:
+            if isinstance(line, EpochLine):
+                x.append(line.timestamp)
+                y.append(line.seg_loss)
+    
+        plt.plot(x, y)
+        plt.waitforbuttonpress()
 
 class LogLine:
     timestamp_pattern: str = r'\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3}'
@@ -46,6 +58,7 @@ class EpochLine(LogLine):
     eta_pattern: str = r'(?<=ETA:\s)(\d*\.\d*)'
 
     def __init__(self, logline: LogLine):
+        super().__init__(logline.timestamp, logline.module, logline.level, logline.msg)
         self.epoch: int = int(regex.search(EpochLine.epoch_pattern, logline.msg).group())
         self.step: int = int(regex.search(EpochLine.step_pattern, logline.msg).group())
         self.lr: float = float(regex.search(EpochLine.lr_pattern, logline.msg).group())
@@ -63,6 +76,7 @@ def parse_file(file_path: str):
     with open(file_path, 'r') as file:
         lines = file.readlines()
         log: Log = Log(lines)
+        log.plot()
 
 if __name__ == '__main__':
     path = os.path.dirname(os.path.abspath(__file__)) + "/example.log"
