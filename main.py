@@ -38,7 +38,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
     parser.add_argument(
-        '--work_dirs', type=str, default='work_dirs',
+        '--work_dirs', type=str, default=os.path.expanduser('~') + '/ei-alle/lanedet/work_dirs',
         help='work dirs')
     parser.add_argument(
         '--load_from', default=None,
