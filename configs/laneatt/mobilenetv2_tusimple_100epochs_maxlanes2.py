@@ -46,6 +46,8 @@ scheduler = dict(
 eval_ep = 1
 save_ep = 1
 
+#ori_img_w=640
+#ori_img_h=480
 ori_img_w=1280
 ori_img_h=720
 img_w=640 
