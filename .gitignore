@@ -26,3 +26,6 @@ build
 lane
 debug
 pretrained_models
+vlanedet/**
+vlanedet_1-12-0/**
+vlanedet_1-12-0_copy/**
