@@ -15,7 +15,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MobileNetV2()
     model.load_state_dict(
-        torch.load('models/mobilenet_tusimple_200epochs.pth'), strict=False)
+        torch.load('models/mobilenet_tusimple_200epochs.pth', map_location="cuda"), strict=False)
     # model = model.to(device)  # Ensure the model is on the correct device
     # model.eval()
     # random_number_moves = random.randint(28, 2 * board_size * board_size)
@@ -43,6 +43,7 @@ def main():
     #     dtype=torch.float32).unsqueeze(0).to(device)
 
     tensor_state = torch.randn(1, 3, 640, 360)
+    #tensor_state = torch.randn(3, 640, 360)
 
     # Convert PyTorch model to ONNX
     onnx_path = 'models/mobilenetv2_model_200epochs.onnx'
