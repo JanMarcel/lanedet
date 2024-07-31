@@ -86,7 +86,12 @@ class LaneATT(nn.Module):
         nms_topk=param.nms_topk
         x = x[-1]
         batch_features = self.conv1(x)
+        print("batch features"+'-'*100)
+        print(batch_features)
+        print(batch_features.shape)
         batch_anchor_features = self.cut_anchor_features(batch_features)
+        print(batch_anchor_features)
+        print(batch_anchor_features.shape)
 
         # Join proposals from all images into a single proposals features batch
         batch_anchor_features = batch_anchor_features.view(-1, self.anchor_feat_channels * self.fmap_h)
@@ -109,6 +114,10 @@ class LaneATT(nn.Module):
         # Predict
         cls_logits = self.cls_layer(batch_anchor_features)
         reg = self.reg_layer(batch_anchor_features)
+        print("#4"+'-'*100)
+        print(cls_logits.shape)
+        print(cls_logits)
+        
 
         # Undo joining
         cls_logits = cls_logits.reshape(x.shape[0], -1, cls_logits.shape[1])
@@ -117,8 +126,15 @@ class LaneATT(nn.Module):
         # Add offsets to anchors
         reg_proposals = torch.zeros((*cls_logits.shape[:2], 5 + self.n_offsets), device=x.device)
         reg_proposals += self.anchors
+        #print(reg_proposals.shape)
+        #print("#1" + '-'*100)
+        #print(reg_proposals)
         reg_proposals[:, :, :2] = cls_logits
+        #print("#2" + '-'*100)
+        #print(reg_proposals)
         reg_proposals[:, :, 4:] += reg
+        #print("#3" + '-'*100)
+        #print(reg_proposals)
 
         # Apply nms
         proposals_list = self.nms(reg_proposals, attention_matrix, nms_thres, nms_topk, conf_threshold)

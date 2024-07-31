@@ -34,8 +34,11 @@ class Detect(object):
 
     def inference(self, data):
         with torch.no_grad():
+            print(data)
             data = self.net(data)
+            print(data)
             data = self.net.module.get_lanes(data)
+            print(data)
         return data
 
     def show(self, data):
