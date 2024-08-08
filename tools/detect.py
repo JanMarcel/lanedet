@@ -12,6 +12,10 @@ from lanedet.utils.visualization import imshow_lanes
 from lanedet.utils.net_utils import load_network
 from pathlib import Path
 from tqdm import tqdm
+from lanedet.models.nets import Detector
+import onnxruntime as ort
+from torch import nn
+from lanedet.core.lane import Lane
 #configs/laneatt/mobilenetv2_tusimple_200epochs.py --savedir vis/bla --load_from models/mobilenet_tusimple_200epochs.pth --img data/Labor/racecar_image_1.jpg
 class Detect(object):
     def __init__(self, cfg):
@@ -69,6 +73,18 @@ def get_img_paths(path):
 
 def process(args):
     cfg = Config.fromfile(args.config)
+    cvimg = cv2.imread("data/Labor/racecar_image_1.jpg")
+    down_points = (360, 640)
+
+    cvimg = cv2.resize(cvimg, down_points, interpolation= cv2.INTER_LINEAR)
+    input_img = np.asanyarray(cvimg, dtype=np.float32).reshape(1, 3, 360, 640)
+    batch = {'img' : input_img}
+
+    ort_session = ort.InferenceSession('models/mobilenetv2_model_200epochs.onnx',providers=["CUDAExecutionProvider"])
+    # compute ONNX Runtime output prediction
+    detector = Detector(cfg, backbone=ort_session)
+    output = detector(batch)
+
     cfg.show = args.show
     cfg.savedir = args.savedir
     cfg.load_from = args.load_from
@@ -87,3 +103,60 @@ if __name__ == '__main__':
     parser.add_argument('--load_from', type=str, default='best.pth', help='The path of model')
     args = parser.parse_args()
     process(args)
+
+
+def proposals_to_pred(proposals):
+    IMG_W = 640
+    IMG_H = 360
+    S = 72
+    n_offsets = S
+    n_strips = S - 1
+    anchor_ys = torch.linspace(1, 0, steps=n_offsets, dtype=torch.float32).cuda()
+    anchor_ys = anchor_ys.to(proposals.device)
+    anchor_ys = anchor_ys.double()
+    lanes = []
+    for lane in proposals:
+        lane_xs = lane[5:] / IMG_W
+        start = int(round(lane[2].item() * n_strips))
+        length = int(round(lane[4].item()))
+        end = start + length - 1
+        end = min(end, len(anchor_ys) - 1)
+        # end = label_end
+        # if the proposal does not start at the bottom of the image,
+        # extend its proposal until the x is outside the image
+        mask = ~((((lane_xs[:start] >= 0.) &
+                    (lane_xs[:start] <= 1.)).cpu().numpy()[::-1].cumprod()[::-1]).astype(bool))
+        lane_xs[end + 1:] = -2
+        lane_xs[:start][mask] = -2
+        lane_ys = anchor_ys[lane_xs >= 0]
+        lane_xs = lane_xs[lane_xs >= 0]
+        lane_xs = lane_xs.flip(0).double()
+        lane_ys = lane_ys.flip(0)
+        if len(lane_xs) <= 1:
+            continue
+        points = torch.stack((lane_xs.reshape(-1, 1), lane_ys.reshape(-1, 1)), dim=1).squeeze(2)
+        lane = Lane(points=points.cpu().numpy(),
+                    metadata={
+                        'start_x': lane[3],
+                        'start_y': lane[2],
+                        'conf': lane[1]
+                    })
+        lanes.append(lane)
+    return lanes
+
+def get_lanes(output, as_lanes=True):
+    proposals_list = output['proposals_list']
+    softmax = nn.Softmax(dim=1)
+    decoded = []
+    for proposals, _, _, _ in proposals_list:
+        proposals[:, :2] = softmax(proposals[:, :2])
+        proposals[:, 4] = torch.round(proposals[:, 4])
+        if proposals.shape[0] == 0:
+            decoded.append([])
+            continue
+        if as_lanes:
+            pred = proposals_to_pred(proposals)
+        else:
+            pred = proposals
+        decoded.append(pred)
+    return decoded

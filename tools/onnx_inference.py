@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import torch
 from torch import nn
+from lanedet.models.nets import Detector
 
 def proposals_to_pred(proposals):
     IMG_W = 640
@@ -44,6 +45,23 @@ def proposals_to_pred(proposals):
     return lanes
 
 def get_lanes(output, as_lanes=True):
+    proposals_list = output['proposals_list']
+    softmax = nn.Softmax(dim=1)
+    decoded = []
+    for proposals, _, _, _ in proposals_list:
+        proposals[:, :2] = softmax(proposals[:, :2])
+        proposals[:, 4] = torch.round(proposals[:, 4])
+        if proposals.shape[0] == 0:
+            decoded.append([])
+            continue
+        if as_lanes:
+            pred = proposals_to_pred(proposals)
+        else:
+            pred = proposals
+        decoded.append(pred)
+    return decoded
+
+def get_lanes(output, as_lanes=True):
     #proposals_list = output['proposals_list']
     proposals_list = output
     softmax = nn.Softmax(dim=1)
@@ -55,35 +73,39 @@ def get_lanes(output, as_lanes=True):
             decoded.append([])
             continue
         if as_lanes:
-            pred = self.proposals_to_pred(proposals)
+            pred = proposals_to_pred(proposals)
         else:
             pred = proposals
         decoded.append(pred)
 
     return decoded
 
-
-cvimg = cv2.imread("data/Labor/racecar_image_3.jpg")
-down_points = (640, 360)
-
-cvimg = cv2.resize(cvimg, down_points, interpolation= cv2.INTER_LINEAR)
-input_img = np.asanyarray(cvimg, dtype=np.float32).reshape(1, 3, 640, 360)
-
 def to_numpy(tensor):
     return tensor.cpu().numpy()
 
-ort_session = ort.InferenceSession('models/mobilenetv2_model_200epochs.onnx')
-# compute ONNX Runtime output prediction
-ort_inputs = {ort_session.get_inputs()[0].name: input_img}
-outputs = ort_session.run(
-    None,
-    ort_inputs
-)
-print(outputs)
-print(outputs[0].shape)
-print(get_lanes(outputs))
-#combo_image = cv2.addWeighted(cvimg, 0.8, outputs[0], 1, 1)
-#cv2.imshow(combo_image)
+if __name__ == "__main__":
+    cvimg = cv2.imread("data/Labor/racecar_image_3.jpg")
+    down_points = (640, 360)
+
+    cvimg = cv2.resize(cvimg, down_points, interpolation= cv2.INTER_LINEAR)
+    input_img = np.asanyarray(cvimg, dtype=np.float32).reshape(1, 3, 640, 360)
+    batch = {'img' : input_img}
+
+    ort_session = ort.InferenceSession('models/mobilenetv2_model_200epochs.onnx')
+    # compute ONNX Runtime output prediction
+    detector = Detector(cfg, backbone=ort_session)
+    
+    # ort_inputs = {ort_session.get_inputs()[0].name: input_img}
+
+    # outputs = ort_session.run(
+    #     None,
+    #     ort_inputs
+    # )
+    # print(outputs)
+    # print(outputs[0].shape)
+    # print(get_lanes(outputs))
+    # #combo_image = cv2.addWeighted(cvimg, 0.8, outputs[0], 1, 1)
+    # #cv2.imshow(combo_image)
 
 
-print(outputs)
+    # print(outputs)

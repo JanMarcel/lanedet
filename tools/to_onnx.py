@@ -1,5 +1,4 @@
 import torch
-import onnx
 from lanedet.models.backbones.mobilenet import MobileNetV2
 
 def torch_to_onnx(model, input_tensor, onnx_path):
@@ -12,12 +11,12 @@ def torch_to_onnx(model, input_tensor, onnx_path):
                           opset_version=11)  # You might need to adjust the opset_version
 
 def main():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MobileNetV2()
     model.load_state_dict(
         torch.load('models/mobilenet_tusimple_200epochs.pth', map_location="cuda"), strict=False)
-    # model = model.to(device)  # Ensure the model is on the correct device
-    # model.eval()
+    model = model.to("cuda:0")  # Ensure the model is on the correct device
+    model.eval()
     # random_number_moves = random.randint(28, 2 * board_size * board_size)
     # args = {
     #     'C': 2,
@@ -42,12 +41,12 @@ def main():
     #     encoded_state, 
     #     dtype=torch.float32).unsqueeze(0).to(device)
 
-    tensor_state = torch.randn(1, 3, 640, 360)
+    tensor_state = torch.randn(1, 3, 360, 640).cuda()
     #tensor_state = torch.randn(3, 640, 360)
 
     # Convert PyTorch model to ONNX
     onnx_path = 'models/mobilenetv2_model_200epochs.onnx'
-    torch.onnx.export(model, tensor_state, onnx_path)
+    torch.onnx.export(model, tensor_state, onnx_path, export_params=True)
     # torch_to_onnx(model, tensor_state, onnx_path)
     print(f"ONNX model saved to {onnx_path}")
 

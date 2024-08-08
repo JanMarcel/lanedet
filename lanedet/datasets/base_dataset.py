@@ -48,6 +48,10 @@ class BaseDataset(Dataset):
         sample.update({'img': img})
 
         if self.training:
+
+            self.logger.info(sample)
+            self.logger.info(sample['mask_path'])
+            
             label = cv2.imread(sample['mask_path'], cv2.IMREAD_UNCHANGED)
             if len(label.shape) > 2:
                 label = label[:, :, 0]

@@ -37,7 +37,7 @@ class LaneATT(nn.Module):
         fmap_w = img_w // self.stride
         self.fmap_w = fmap_w
         self.anchor_ys = torch.linspace(1, 0, steps=self.n_offsets, dtype=torch.float32)
-        self.anchor_cut_ys = torch.linspace(1, 0, steps=self.fmap_h, dtype=torch.float32)
+        self.anchor_cut_ys = torch.linspace(1, 0, steps=self.fmap_h, dtype=torch.float32).cuda()
         self.anchor_feat_channels = anchor_feat_channels
 
         # Anchor angles, same ones used in Line-CNN
@@ -61,10 +61,10 @@ class LaneATT(nn.Module):
             self.anchor_feat_channels, fmap_w, self.fmap_h)
 
         # Setup and initialize layers
-        self.conv1 = nn.Conv2d(backbone_nb_channels, self.anchor_feat_channels, kernel_size=1)
-        self.cls_layer = nn.Linear(2 * self.anchor_feat_channels * self.fmap_h, 2)
-        self.reg_layer = nn.Linear(2 * self.anchor_feat_channels * self.fmap_h, self.n_offsets + 1)
-        self.attention_layer = nn.Linear(self.anchor_feat_channels * self.fmap_h, len(self.anchors) - 1)
+        self.conv1 = nn.Conv2d(backbone_nb_channels, self.anchor_feat_channels, kernel_size=1).cuda()
+        self.cls_layer = nn.Linear(2 * self.anchor_feat_channels * self.fmap_h, 2).cuda()
+        self.reg_layer = nn.Linear(2 * self.anchor_feat_channels * self.fmap_h, self.n_offsets + 1).cuda()
+        self.attention_layer = nn.Linear(self.anchor_feat_channels * self.fmap_h, len(self.anchors) - 1).cuda()
         self.initialize_layer(self.attention_layer)
         self.initialize_layer(self.conv1)
         self.initialize_layer(self.cls_layer)
@@ -73,6 +73,7 @@ class LaneATT(nn.Module):
         #self.inited = False
 
         self.anchors = self.anchors.cuda()
+        self.anchors_cut = self.anchors_cut.cuda()
         self.anchor_ys = self.anchor_ys.cuda()
         self.cut_zs = self.cut_zs.cuda()
         self.cut_ys = self.cut_ys.cuda()
