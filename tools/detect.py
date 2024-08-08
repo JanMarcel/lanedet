@@ -12,7 +12,7 @@ from lanedet.utils.visualization import imshow_lanes
 from lanedet.utils.net_utils import load_network
 from pathlib import Path
 from tqdm import tqdm
-
+#configs/laneatt/mobilenetv2_tusimple_200epochs.py --savedir vis/bla --load_from models/mobilenet_tusimple_200epochs.pth --img data/Labor/racecar_image_1.jpg
 class Detect(object):
     def __init__(self, cfg):
         self.cfg = cfg

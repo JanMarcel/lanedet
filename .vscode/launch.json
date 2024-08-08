@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python-Debugger: Aktuelle Datei mit Argumenten",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/detect.py",
+            "console": "integratedTerminal",
+            "args": [
+                "configs/laneatt/mobilenetv2_tusimple_200epochs.py",
+                "--savedir",
+                "vis/bla",
+                "--load_from",
+                "models/mobilenet_tusimple_200epochs.pth",
+                "--img",
+                "data/Labor/racecar_image_1.jpg"
+            ]
+        }
+    ]
+}
