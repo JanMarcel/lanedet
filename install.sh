@@ -23,5 +23,4 @@ pip3 install numpy==1.24.4
 
 python setup.py build develop
 
-pip install onnxruntime-gpu==1.18.0 --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packa
-ging/onnxruntime-cuda-12/pypi/simple/
+pip install onnxruntime-gpu==1.18.0 --extra-index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
