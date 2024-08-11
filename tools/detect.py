@@ -71,40 +71,6 @@ def get_img_paths(path):
         raise Exception(f'ERROR: {p} does not exist')
     return paths 
 
-def process(args):
-    cfg = Config.fromfile(args.config)
-    cvimg = cv2.imread("data/Labor/racecar_image_1.jpg")
-    down_points = (360, 640)
-
-    cvimg = cv2.resize(cvimg, down_points, interpolation= cv2.INTER_LINEAR)
-    input_img = np.asanyarray(cvimg, dtype=np.float32).reshape(1, 3, 360, 640)
-    batch = {'img' : input_img}
-
-    ort_session = ort.InferenceSession('models/mobilenetv2_model_200epochs.onnx',providers=["CUDAExecutionProvider"])
-    # compute ONNX Runtime output prediction
-    detector = Detector(cfg, backbone=ort_session)
-    output = detector(batch)
-
-    cfg.show = args.show
-    cfg.savedir = args.savedir
-    cfg.load_from = args.load_from
-    detect = Detect(cfg)
-    paths = get_img_paths(args.img)
-    for p in tqdm(paths):
-        detect.run(p)
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('config', help='The path of config file')
-    parser.add_argument('--img',  help='The path of the img (img file or img_folder), for example: data/*.png')
-    parser.add_argument('--show', action='store_true', 
-            help='Whether to show the image')
-    parser.add_argument('--savedir', type=str, default=None, help='The root of save directory')
-    parser.add_argument('--load_from', type=str, default='best.pth', help='The path of model')
-    args = parser.parse_args()
-    process(args)
-
-
 def proposals_to_pred(proposals):
     IMG_W = 640
     IMG_H = 360
@@ -160,3 +126,41 @@ def get_lanes(output, as_lanes=True):
             pred = proposals
         decoded.append(pred)
     return decoded
+
+def process(args):
+    cfg = Config.fromfile(args.config)
+    processes = Process(cfg.val_process, cfg)
+    cvimg = cv2.imread("data/Labor/racecar_image_1.jpg")
+    down_points = (640, 360)
+
+    # cvimg = cv2.resize(cvimg, down_points, interpolation= cv2.INTER_LINEAR)
+    # input_img = np.asanyarray(cvimg, dtype=np.float32).reshape(1, 3, 360, 640)
+    data = {'img': cvimg, 'lanes': []}
+    data = processes(data)
+    data['img'] = np.asanyarray(data['img'], dtype=np.float32).reshape(1, 3, 360, 640)
+    ort_session = ort.InferenceSession('models/mobilenetv2_model_200epochs.onnx',providers=["CUDAExecutionProvider"])
+    # compute ONNX Runtime output prediction
+    detector = Detector(cfg, backbone=ort_session)
+    output = detector(data)
+    lanes = get_lanes(output)
+
+    cfg.show = args.show
+    cfg.savedir = args.savedir
+    cfg.load_from = args.load_from
+    detect = Detect(cfg)
+    paths = get_img_paths(args.img)
+    for p in tqdm(paths):
+        detect.run(p)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('config', help='The path of config file')
+    parser.add_argument('--img',  help='The path of the img (img file or img_folder), for example: data/*.png')
+    parser.add_argument('--show', action='store_true', 
+            help='Whether to show the image')
+    parser.add_argument('--savedir', type=str, default=None, help='The root of save directory')
+    parser.add_argument('--load_from', type=str, default='best.pth', help='The path of model')
+    args = parser.parse_args()
+    process(args)
+
+
