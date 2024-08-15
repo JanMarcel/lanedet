@@ -2,11 +2,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python-Debugger: Aktuelle Datei mit Argumenten",
+            "name": "Python-Debugger: Detect with conda",
             "type": "debugpy",
             "request": "launch",
             "program": "tools/detect.py",
             "console": "integratedTerminal",
+            "python": "${userHome}/.conda/envs/lanedet/bin/python",
             "args": [
                 "configs/laneatt/mobilenetv2_tusimple_200epochs.py",
                 "--savedir",

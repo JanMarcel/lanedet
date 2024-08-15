@@ -1,4 +1,5 @@
 import os.path as osp
+import os
 import numpy as np
 import cv2
 import os
@@ -31,6 +32,7 @@ class TuSimple(BaseDataset):
         self.data_infos = []
         max_lanes = 0
         for anno_file in self.anno_files:
+            self.logger.info(os.getcwd())
             anno_file = osp.join(self.data_root, anno_file)
             with open(anno_file, 'r') as anno_obj:
                 lines = anno_obj.readlines()

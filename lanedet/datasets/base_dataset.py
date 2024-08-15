@@ -11,6 +11,7 @@ from .process import Process
 from lanedet.utils.visualization import imshow_lanes
 from mmcv.parallel import DataContainer as DC
 
+from time import sleep
 
 @DATASETS.register_module
 class BaseDataset(Dataset):
@@ -38,7 +39,14 @@ class BaseDataset(Dataset):
 
     def __getitem__(self, idx):
         data_info = self.data_infos[idx]
-        if not osp.isfile(data_info['img_path']):
+        MAX_ATTEMPTS = 5
+        i = 0
+        while not osp.isfile(data_info['img_path']) and i < MAX_ATTEMPTS:
+            sleep(0.02)
+            i += 1
+        
+        if i == MAX_ATTEMPTS:
+            self.logger.warning('cannot find file: {}'.format(data_info['img_path']))
             raise FileNotFoundError('cannot find file: {}'.format(data_info['img_path']))
 
         img = cv2.imread(data_info['img_path'])
