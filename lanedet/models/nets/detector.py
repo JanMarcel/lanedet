@@ -34,7 +34,7 @@ class Detector(nn.Module):
             fea = self.backbone(batch['img'])
         else:
             ort_inputs = {self.backbone.get_inputs()[0].name: batch['img']}
-            fea = self.backbone.run(None, ort_inputs)
+            fea = self.backbone.run(["461"], ort_inputs)
             #tmp = torch.transpose(torch.from_numpy(fea[0]), 2, 3).unsqueeze(0).cuda()
             fea = list(torch.from_numpy(fea[0]).unsqueeze(0).cuda())
 

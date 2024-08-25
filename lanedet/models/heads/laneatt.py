@@ -138,7 +138,7 @@ class LaneATT(nn.Module):
         #print(reg_proposals)
 
         # Apply nms
-        proposals_list = self.nms(reg_proposals, attention_matrix, nms_thres, nms_topk, conf_threshold)
+        proposals_list = self.nms(reg_proposals.cuda(), attention_matrix, nms_thres, nms_topk, conf_threshold)
 
         output = {'proposals_list':proposals_list}
 

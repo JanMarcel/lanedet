@@ -130,14 +130,14 @@ def get_lanes(output, as_lanes=True):
 def process(args):
     cfg = Config.fromfile(args.config)
     processes = Process(cfg.val_process, cfg)
-    cvimg = cv2.imread("data/Labor/racecar_image_1.jpg")
+    cvimg = cv2.imread("zeros.jpg").astype(np.float32)
     down_points = (640, 360)
 
     # cvimg = cv2.resize(cvimg, down_points, interpolation= cv2.INTER_LINEAR)
     # input_img = np.asanyarray(cvimg, dtype=np.float32).reshape(1, 3, 360, 640)
     data = {'img': cvimg, 'lanes': []}
     data = processes(data)
-    data['img'] = np.asanyarray(data['img'], dtype=np.float32).reshape(1, 3, 360, 640)
+    data['img'] = np.asanyarray(data['img'].unsqueeze(0), dtype=np.float32)
     ort_session = ort.InferenceSession('models/mobilenetv2_model_200epochs.onnx',providers=["CUDAExecutionProvider"])
     # compute ONNX Runtime output prediction
     detector = Detector(cfg, backbone=ort_session)
