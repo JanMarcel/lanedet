@@ -2,8 +2,9 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python-Debugger: Aktuelle Datei mit Argumenten",
+            "name": "Python-Debugger: tools/detect.py",
             "type": "debugpy",
+            "python": "${command:python.interpreterPath}",
             "request": "launch",
             "program": "tools/detect.py",
             "console": "integratedTerminal",
@@ -14,7 +15,23 @@
                 "--load_from",
                 "models/mobilenet_tusimple_200epochs.pth",
                 "--img",
-                "data/Labor/racecar_image_1.jpg"
+                "zeros.jpg"
+            ]
+        },
+        {
+            "name": "Python-Debugger: tools/to_onnx.py",
+            "type": "debugpy",
+            "python": "${command:python.interpreterPath}",
+            "request": "launch",
+            "program": "tools/to_onnx.py",
+            "env": {"CUDA_LAUNCH_BLOCKING" : "1"},
+            "console": "integratedTerminal",
+            "args": [
+                "configs/laneatt/mobilenetv2_tusimple_200epochs.py",
+                "--load_from",
+                "models/mobilenet_tusimple_200epochs.pth",
+                "--img",
+                "zeros.jpg"
             ]
         }
     ]
