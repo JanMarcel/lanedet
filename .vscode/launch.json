@@ -17,6 +17,16 @@
                 "--img",
                 "data/Labor/racecar_image_1.jpg"
             ]
+        },
+        {
+            "name": "Python-Debugger: LogParser Windows Py311",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "tools/log_parser.py",
+            "console": "integratedTerminal",
+            "python": "${userHome}/AppData/Local/Programs/Python/Python311/python.exe",
+            "args": [
+            ]
         }
     ]
 }
