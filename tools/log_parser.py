@@ -13,24 +13,33 @@ class Log:
                 self.log_lines.append(LogLine.from_line(line))
     
     def plot(self):
-        x = []
-        y = []
-        y1 = []
-
+        times = []
+        steps = []
+        seg_losses = []
+        exit_losses = []
+        best_metrics = []
+        metric_steps = []
         first: bool = True
         for line in self.log_lines:
             if isinstance(line, EpochLine):
                 if first:
                     first = False
                     continue
-                x.append(line.timestamp)
-                y.append(line.seg_loss)
-                y1.append(line.exist_loss)
+                times.append(line.timestamp)
+                steps.append(line.step)
+                seg_losses.append(line.seg_loss)
+                exit_losses.append(line.exist_loss)
+
+            elif isinstance(line, BestMetricLine):
+                metric_steps.append(steps[-1])
+                best_metrics.append(line.best_metric)
     
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%HH'))
-        plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=2))
-        plt.plot(x, y)
-        plt.plot(x, y1)
+        #plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%HH'))
+        #plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=2))
+        plt.plot(steps, seg_losses, label="seg_loss")
+        plt.plot(steps, exit_losses, label="exit_loss")
+        plt.plot(metric_steps, best_metrics, label="best_metric")
+        plt.legend(loc="upper right")
         plt.waitforbuttonpress()
 
 class LogLine:
@@ -49,7 +58,7 @@ class LogLine:
         logline: LogLine = LogLine(timestamp, module, level, msg)
         if msg.startswith("epoch:"):
             return EpochLine(logline)
-        elif msg.startswith("Best Metric:"):
+        elif msg.startswith("Best metric:"):
             return BestMetricLine(logline)
         else:
             return logline
