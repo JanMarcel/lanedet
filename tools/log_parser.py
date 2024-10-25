@@ -49,6 +49,8 @@ class LogLine:
         logline: LogLine = LogLine(timestamp, module, level, msg)
         if msg.startswith("epoch:"):
             return EpochLine(logline)
+        elif msg.startswith("Best Metric:"):
+            return BestMetricLine(logline)
         else:
             return logline
 
@@ -78,8 +80,13 @@ class EpochLine(LogLine):
         self.data: float = float(regex.search(EpochLine.data_pattern, logline.msg).group())
         self.batch: float = float(regex.search(EpochLine.batch_pattern, logline.msg).group())
         #self.eta: time 
-        print(self)
 
+class BestMetricLine(LogLine):
+    best_metric_pattern: str = r'(?<=Best metric:\s)(\d.\d*)'
+
+    def __init__(self, logline: LogLine):
+        super().__init__(logline.timestamp, logline.module, logline.level, logline.msg)
+        self.best_metric: float = float(regex.search(BestMetricLine.best_metric_pattern, logline.msg).group())
 
     
 
