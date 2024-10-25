@@ -1,6 +1,7 @@
 import os
 import time
 from datetime import datetime
+import json
 import regex
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -16,9 +17,15 @@ class Log:
         times = []
         steps = []
         seg_losses = []
-        exit_losses = []
-        best_metrics = []
+        exit_losses = []       
         metric_steps = []
+        best_metrics = []
+        tps = []
+        fps = []
+        fns = []
+        precisions = []
+        recalls = []
+        f1s = []
         first: bool = True
         for line in self.log_lines:
             if isinstance(line, EpochLine):
@@ -29,16 +36,29 @@ class Log:
                 steps.append(line.step)
                 seg_losses.append(line.seg_loss)
                 exit_losses.append(line.exist_loss)
-
+                
+            elif isinstance(line, JSONStatsLine):
+                    metric_steps.append(steps[-1]) #applies for JSONStatsLine and BestMetricLine
+                    tps.append(line.TP)
+                    fps.append(line.FP)
+                    fns.append(line.FN)
+                    precisions.append(line.precision)
+                    recalls.append(line.recall)
+                    f1s.append(line.f1)
             elif isinstance(line, BestMetricLine):
-                metric_steps.append(steps[-1])
-                best_metrics.append(line.best_metric)
+                    best_metrics.append(line.best_metric)
     
         #plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%HH'))
         #plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=2))
         plt.plot(steps, seg_losses, label="seg_loss")
         plt.plot(steps, exit_losses, label="exit_loss")
         plt.plot(metric_steps, best_metrics, label="best_metric")
+        plt.plot(metric_steps, tps, label="tp")
+        plt.plot(metric_steps, fps, label="fp")
+        plt.plot(metric_steps, fns, label="fn")
+        plt.plot(metric_steps, precisions, label="precision")
+        plt.plot(metric_steps, recalls, label="recall")
+        plt.plot(metric_steps, f1s, label="f1")
         plt.legend(loc="upper right")
         plt.waitforbuttonpress()
 
@@ -56,12 +76,21 @@ class LogLine:
         msg: str = regex.search(LogLine.msg_pattern, line).group()
 
         logline: LogLine = LogLine(timestamp, module, level, msg)
-        if msg.startswith("epoch:"):
-            return EpochLine(logline)
-        elif msg.startswith("Best metric:"):
-            return BestMetricLine(logline)
-        else:
-            return logline
+        if module == "lanedet.utils.recorder":
+            if msg.startswith("epoch:"):
+                return EpochLine(logline)
+
+            elif msg.startswith("Best metric:"):
+                return BestMetricLine(logline)
+        elif module == "lanedet.datasets.base_dataset":
+            try:
+                stats: dict = json.loads(msg)
+                return JSONStatsLine(logline, stats)
+            except ValueError as e:
+                print(e)
+        
+        # fallback
+        return logline
 
     def __init__(self, timestamp: datetime, module: str, level: str, msg: str):       
         self.timestamp = timestamp
@@ -97,7 +126,15 @@ class BestMetricLine(LogLine):
         super().__init__(logline.timestamp, logline.module, logline.level, logline.msg)
         self.best_metric: float = float(regex.search(BestMetricLine.best_metric_pattern, logline.msg).group())
 
-    
+class JSONStatsLine(LogLine):
+    def __init__(self, logline: LogLine, stats: dict):
+        super().__init__(logline.timestamp, logline.module, logline.level, logline.msg)
+        self.TP = stats['TP']
+        self.FP = stats['FP']
+        self.FN = stats['FN']
+        self.precision = stats['Precision']
+        self.recall = stats['Recall']
+        self.f1 = stats['F1']
 
 def parse_file(file_path: str):
     with open(file_path, 'r') as file:
