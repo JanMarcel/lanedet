@@ -128,7 +128,7 @@ def eval_predictions(pred_dir, anno_dir, list_path, width=30, official=True, seq
         recall = float(total_tp) / (total_tp + total_fn)
         f1 = 2 * precision * recall / (precision + recall)
 
-    return {'TP': total_tp, 'FP': total_fp, 'FN': total_fn, 'Precision': precision, 'Recall': recall, 'F1': f1}
+    return {"TP": total_tp, "FP": total_fp, "FN": total_fn, "Precision": precision, "Recall": recall, "F1": f1}
 
 
 def main():

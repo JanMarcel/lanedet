@@ -352,7 +352,7 @@ MMDataParallel(
 2024-05-01 01:28:31,103 - lanedet.utils.recorder - INFO - epoch: 5  step: 66551  lr: 0.0027  seg_loss: 0.1091  exist_loss: 0.0467  data: 0.2123  batch: 0.4484  eta: 8:20:02
 2024-05-01 01:29:20,078 - lanedet.utils.recorder - INFO - epoch: 5  step: 66660  lr: 0.0027  seg_loss: 0.1147  exist_loss: 0.0479  data: 0.2129  batch: 0.4481  eta: 8:19:13
 2024-05-01 01:29:20,223 - lanedet.datasets.base_dataset - INFO - Loading CULane annotations...
-2024-05-01 01:51:20,305 - lanedet.datasets.base_dataset - INFO - {'TP': 76088, 'FP': 29301, 'FN': 28798, 'Precision': 0.7219728814202621, 'Recall': 0.7254352344450165, 'F1': 0.7236999167756508}
+2024-05-01 01:51:20,305 - lanedet.datasets.base_dataset - INFO - {"TP": 76088, "FP": 29301, "FN": 28798, "Precision": 0.7219728814202621, "Recall": 0.7254352344450165, "F1": 0.7236999167756508}
 2024-05-01 01:51:20,314 - lanedet.utils.recorder - INFO - 0.7236999167756508
 2024-05-01 01:51:20,416 - lanedet.utils.recorder - INFO - Best metric: 0.7236999167756508
 2024-05-01 01:51:25,161 - lanedet.utils.recorder - INFO - epoch: 6  step: 66661  lr: 0.0027  seg_loss: 0.1138  exist_loss: 0.0478  data: 0.4036  batch: 0.6387  eta: 8:19:16
@@ -433,6 +433,6 @@ MMDataParallel(
 2024-05-01 10:01:52,211 - lanedet.utils.recorder - INFO - epoch: 11  step: 132211  lr: 0.0001  seg_loss: 0.0799  exist_loss: 0.0446  data: 0.2121  batch: 0.4475  eta: 0:08:18
 2024-05-01 10:09:20,947 - lanedet.utils.recorder - INFO - epoch: 11  step: 133211  lr: 0.0000  seg_loss: 0.0838  exist_loss: 0.0462  data: 0.2132  batch: 0.4488  eta: 0:00:48
 2024-05-01 10:10:09,889 - lanedet.utils.recorder - INFO - epoch: 11  step: 133320  lr: 0.0000  seg_loss: 0.0713  exist_loss: 0.0456  data: 0.2123  batch: 0.4479  eta: 0:00:00
-2024-05-01 10:31:06,066 - lanedet.datasets.base_dataset - INFO - {'TP': 78050, 'FP': 26413, 'FN': 26836, 'Precision': 0.7471544948929286, 'Recall': 0.7441412581278721, 'F1': 0.7456448323135052}
+2024-05-01 10:31:06,066 - lanedet.datasets.base_dataset - INFO - {"TP": 78050, "FP": 26413, "FN": 26836, "Precision": 0.7471544948929286, "Recall": 0.7441412581278721, "F1": 0.7456448323135052}
 2024-05-01 10:31:06,075 - lanedet.utils.recorder - INFO - 0.7456448323135052
 2024-05-01 10:31:06,233 - lanedet.utils.recorder - INFO - Best metric: 0.7456448323135052
