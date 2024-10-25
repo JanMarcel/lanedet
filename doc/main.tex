@@ -41,22 +41,58 @@
 
         \subsection{Ausgangssituation}
             % Auto beschrieben
-            % bisherige Spurerkennung beschreiben
-            % probleme: Lichtverhältnisse, Schatten
+            Das \textit{HTWG-RaceCar} ist ein autonomes Modellfahrzeug, welches im Rahmen des Studiums Automobilinformationstechnik an der HTWG Konstanz entwickelt wird.
+            Das Fahrzeug ist mit einem Jetson XY
+            %Todo Modellname
+            ausgestattet, welcher die Steuerung des Fahrzeugs übernimmt.
+            Dabei kann das Fahrzeug sowohl im manuellen Modus per Tastatur gesteuert, als auch im autonomen Modus betrieben werden.
+            Zur Erkennung der Spur wird eine Kamera verwendet. %Todo Kamera-Name
+            In der vorherigen Umsetzung wurde eine Kantendetektion verwendet, um die Spurmarkierungen zu erkennen.
+            Mit Hilfe der Python-Bibliothek OpenCV wurden die Kanten der Spurmarkierungen erkannt und das Fahrzeug entsprechend gesteuert.
+            Die Probleme dieses Systems waren hohe Anfälligkeit gegenüber Lichtverhältnissen und Schatten.
+            Eine autonome Navigation des Fahrzeugs war somit nur unter optimalen Bedingungen möglich. Diese bestanden in zugezogenen Vorhängen im Labor.
+            Doch selbst unter diesen Bedingungen war die Erkennung der Spurmarkierungen nicht immer zuverlässig.
+
+            Eine Deep-Learning-basierte Spurerkennung soll diese Probleme beheben und eine zuverlässige Spurerkennung auch unter schwierigen Bedingungen ermöglichen.
+
+ 
             % am besten quantifizieren
 
         \subsection{Aufgabenstellung}
             % siehe OneNote
+            \textit{In dem Teamprojekt ist ein neuronales Netzwerk zu implementieren, das in der Lage ist, Spurmarkierungen robust zu erkennen. Dieses Netzwerk soll in weniger als 60 Millisekunden eine Vorhersage der Spurmarkierungen auf dem Jetson Nano liefern.}
             % 
     \section{Umsetzung}
         % Als grundlage diente repository x/y
-        \subsection{Recherche}
+        Um den Umfang des Projekts zu begrenzen, wurde das bestehendee Repository \textit{lanedet} als Grundlage verwendet.
+        %Todo: Link einfügen: https://github.com/Turoad/lanedet
+        \textit{LaneDet is an open source lane detection toolbox based on PyTorch that aims to pull together a wide variety of state-of-the-art lane detection models.}
+
+        %\subsection{Recherche}
             % 
         \subsection{Installation}
-            % station
+            Das erste Ziel der Umsetzung bestand darin das besagte Repository auf den WorkingStations des KI-Labors zu installieren, um eine Modelle trainieren zu können.
+            Anfängliche Probleme von Paketabhängigkeiten und Versionskonflikten konnten aufgelöst werden. 
+            %Todo: landeDet auf HTWG Git schieben
+            % ToDo: genaue Versionen pyTorch/cuda etc
+            Alle Änderungen können in der GIT-History nachvollzogen werden und über ergänzte Installationsskripte reproduziert werden, sodass das Projekt auch nach Abschluss des Teamprojekts weitergeführt werden kann. Letzter Stand: 26.10.2024. %Todo: Datum
+
+
         \subsection{Datengrundlage}
             % --> auswahl aufgrund von bester subjektiver performance
             % nachweise für daten
+            Als Datengrundlage verlinkt LaneDet auf CULane oder alternativ TUSimple, die beide bereits annotierte Datensätze für die Spurerkennung bereitstellen. 
+            %Todo: Links einfügen
+            % ToDo: Beschreiben wie entpackt werden muss
+            Nach einer subjektiven Bewertung der Datensätze wurde sich für TUSimple entschieden, da dieser eine bessere Performance aufwies.
+            %Todo Bilder einfügen
+            Während erster Tests ist klar geworden, dass die Bildauflösung eine entscheidende Rolle für die Erkennung spielt. Anfangs wurde im besten Bild die unterschiedliche Farbe der Spurmarkierungen vermutet. Diese konnte jedoch durch nachbearbeitung der Bilder ausgeschlossen werden.
+
+        \subsection{Backbone}
+            Wie bei der Datengrundlage stellt LaneDet auch eine Liste an Backbones zur Verfügung. Auch hier wurde zunächst subjektv entschieden, welcher Backbone die beste Erkennung liefert.
+            Auf dem Labor-PC konnten dabei mit dem Mobile-Net Backbone die besten Ergebnisse erzielt werden.
+            %Todo: Bilder einfügen
+            %Todo: Graphen einfügen
         \subsection{Performance}
             % --> performance der modelle auf Labor PC's
             % --> performance der Modelle auf altem Jetson
