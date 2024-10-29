@@ -42,13 +42,22 @@ git clone https://github.com/JanMarcel/lanedet.git
 We call this directory as `$LANEDET_ROOT`
 
 ### Create a conda virtual environment and activate it (conda is optional)
+### Automatic 
+```bash
+# for installation on workstation
+bash scipts/install_workstation.sh
 
+# for installation on Jetson Nano
+bash scipts/install_jetson.sh
+```
+
+### Manual (only if you know what you do)
 ```Shell
 conda create -n lanedet python=3.8 -y
 conda activate lanedet
 ```
 
-### Install dependencies
+#### Install dependencies
 
 ```Shell
 # Install via pip
@@ -59,6 +68,33 @@ python setup.py build develop
 
 # if setup fails, try the following. After that retry setup
 pip install -r requirements.txt
+```
+
+### Troubleshooting installation
+
+If you get the following error: 
+```python
+Traceback (most recent call last):
+  File "tools/detect.py", line 8, in <module>
+    from lanedet.datasets.process import Process
+  File "~/lanedet/lanedet/__init__.py", line 1, in <module>
+    from .ops import *
+  File "~/lanedet/lanedet/ops/__init__.py", line 1, in <module>
+    from .nms import nms
+  File "~/lanedet/lanedet/ops/nms.py", line 29, in <module>
+    from . import nms_impl
+ImportError: libcudart.so.10.1: cannot open shared object file: No such file or directory
+```
+You may need to set the environment variable, such that the file can be found
+```bash
+# at first find the path
+locate libcudart
+# Output
+...
+~/.conda/pkgs/cudatoolkit-10.1.243-h6bb024c_0/lib/libcudart.so.10.1 # <- that is the one
+...
+# next set the environment varibale. Put this in your ~/.bash_profile
+export LD_LIBRARY_PATH=~/.conda/pkgs/cudatoolkit-10.1.243-h6bb024c_0/lib
 ```
 
 ### Data preparation
