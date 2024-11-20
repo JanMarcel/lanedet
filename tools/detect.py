@@ -34,11 +34,11 @@ class Detect(object):
 
     def inference(self, data):
         with torch.no_grad():
-            print(data)
+            # print(data)
             data = self.net(data)
-            print(data)
+            # print(data)
             data = self.net.module.get_lanes(data)
-            print(data)
+            # print(data)
         return data
 
     def show(self, data):
@@ -46,6 +46,10 @@ class Detect(object):
         if out_file:
             out_file = osp.join(out_file, osp.basename(data['img_path']))
         lanes = [lane.to_array(self.cfg) for lane in data['lanes']]
+        # with open(f"{out_file}.lanes", "w") as fptr:
+        #     # fptr.write(str(lanes))
+        #     for lane in lanes:
+        #         fptr.write(str(lane) + ',\n')
         imshow_lanes(data['ori_img'], lanes, show=self.cfg.show, out_file=out_file)
 
     def run(self, data):
