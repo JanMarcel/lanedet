@@ -5,7 +5,7 @@ import datetime
 from .logger import init_logger
 import logging
 import pathspec
-
+import socket
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
@@ -46,6 +46,10 @@ class Recorder(object):
 
         init_logger(self.log_path)
         self.logger = logging.getLogger(__name__)
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        self.logger.info('Training started on: ' + s.getsockname()[0])
+        s.close()
         self.logger.info('Config: \n' + cfg.text)
 
         self.save_cfg(cfg)

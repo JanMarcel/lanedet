@@ -1,7 +1,7 @@
 read -p 'Name for the conda virtual environment (press Enter for "lanedet"): ' env_name
 if [[ "$env_name" == "" ]]
 then
-    env_name = 'lanedet'
+    env_name='lanedet'
 fi
 conda create -n $env_name python=3.8 -y
 conda activate $env_name
