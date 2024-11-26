@@ -1,4 +1,5 @@
 # Disallow
+doc/*
 work_dirs/
 predicts/
 output/
@@ -34,3 +35,4 @@ conda/
 
 # Allow
 !.vscode/launch.json
+!.doc/main.tex
