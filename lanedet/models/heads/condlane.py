@@ -933,7 +933,7 @@ class CondLaneHead(nn.Module):
                 pos = label * h * w + r * w + c
                 poses.append(pos)
             poses = torch.from_numpy(np.array(
-                poses, np.long)).long().to(device).unsqueeze(1)
+                poses, np.longlong)).long().to(device).unsqueeze(1)
             return poses
 
         # with Timer("Elapsed time in stage1: %f"):  # ignore
