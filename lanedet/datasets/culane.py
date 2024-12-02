@@ -7,6 +7,7 @@ import lanedet.utils.culane_metric as culane_metric
 import cv2
 from tqdm import tqdm
 import logging
+import json
 
 LIST_FILE = {
     'train': 'list/train_gt.txt',
@@ -85,5 +86,5 @@ class CULane(BaseDataset):
             with open(os.path.join(output_dir, output_filename), 'w') as out_file:
                 out_file.write(output)
         result = culane_metric.eval_predictions(output_basedir, self.data_root, self.list_path, official=True)
-        self.logger.info(result)
+        self.logger.info(json.dumps([result]))
         return result['F1']
