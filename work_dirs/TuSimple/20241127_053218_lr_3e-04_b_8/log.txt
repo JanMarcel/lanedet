@@ -1,0 +1,1119 @@
+2024-11-27 05:32:18,925 - lanedet.utils.recorder - INFO - Training started on: 141.37.157.56
+2024-11-27 05:32:18,925 - lanedet.utils.recorder - INFO - Config: 
+net = dict(
+    type='Detector',
+)
+
+backbone = dict(
+    type='ResNetWrapper',
+    resnet='resnet18',
+    pretrained=True,
+    replace_stride_with_dilation=[False, False, False],
+    out_conv=False,
+)
+featuremap_out_channel = 512 
+featuremap_out_stride = 32 
+
+num_points = 72
+max_lanes = 5
+sample_y=range(710, 150, -10)
+
+heads = dict(type='LaneATT',
+        anchors_freq_path='.cache/tusimple_anchors_freq.pt',
+        topk_anchors=1000)
+
+train_parameters = dict(
+    conf_threshold=None,
+    nms_thres=15.,
+    nms_topk=3000
+)
+test_parameters = dict(
+    conf_threshold=0.2,
+    nms_thres=45,
+    nms_topk=max_lanes
+)
+
+optimizer = dict(
+  type = 'Adam',
+  lr = 0.0003,
+)
+
+epochs = 100
+batch_size = 8
+total_iter = (3616 // batch_size) * epochs
+scheduler = dict(
+    type = 'CosineAnnealingLR',
+    T_max = total_iter
+)
+
+eval_ep = 1
+save_ep = epochs
+
+ori_img_w=1280
+ori_img_h=720
+img_w=640 
+img_h=360
+cut_height=0
+
+train_process = [
+    dict(type='GenerateLaneLine', 
+        transforms = (
+            dict(
+                name = 'Affine',
+                parameters = dict(
+                    translate_px = dict(
+                        x = (-25, 25),
+                        y = (-10, 10)
+                    ),
+                    rotate=(-6, 6),
+                    scale=(0.85, 1.15)
+                )
+            ),
+            dict(
+                name = 'HorizontalFlip',
+                parameters = dict(
+                    p=0.5
+                ),
+            )
+        ), 
+        wh = (img_w, img_h),
+    ),
+    dict(type='ToTensor', keys=['img', 'lane_line']),
+] 
+
+val_process = [
+    dict(type='GenerateLaneLine', wh=(img_w, img_h)),
+    dict(type='ToTensor', keys=['img']),
+]
+
+dataset_path = './data/TUSimple'
+test_json_file = 'data/TUSimple/test_label.json'
+dataset_type = 'TuSimple'
+
+dataset = dict(
+    train=dict(
+        type=dataset_type,
+        data_root=dataset_path,
+        split='trainval',
+        processes=train_process,
+    ),
+    val=dict(
+        type=dataset_type,
+        data_root=dataset_path,
+        split='test',
+        processes=val_process,
+    ),
+    test=dict(
+        type=dataset_type,
+        data_root=dataset_path,
+        split='test',
+        processes=val_process,
+    )
+)
+
+
+workers = 12
+log_interval = 100
+seed=0
+lr_update_by_epoch = False
+
+2024-11-27 05:33:04,836 - lanedet.utils.recorder - INFO - Network: 
+MMDataParallel(
+  (module): Detector(
+    (backbone): ResNetWrapper(
+      (model): ResNet(
+        (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+        (layer1): Sequential(
+          (0): BasicBlock(
+            (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (1): BasicBlock(
+            (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+        )
+        (layer2): Sequential(
+          (0): BasicBlock(
+            (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (downsample): Sequential(
+              (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(2, 2), bias=False)
+              (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+          )
+          (1): BasicBlock(
+            (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+        )
+        (layer3): Sequential(
+          (0): BasicBlock(
+            (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (downsample): Sequential(
+              (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(2, 2), bias=False)
+              (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+          )
+          (1): BasicBlock(
+            (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+        )
+        (layer4): Sequential(
+          (0): BasicBlock(
+            (conv1): Conv2d(256, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (downsample): Sequential(
+              (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+              (1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+          )
+          (1): BasicBlock(
+            (conv1): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+        )
+      )
+    )
+    (heads): LaneATT(
+      (conv1): Conv2d(512, 64, kernel_size=(1, 1), stride=(1, 1))
+      (cls_layer): Linear(in_features=1408, out_features=2, bias=True)
+      (reg_layer): Linear(in_features=1408, out_features=73, bias=True)
+      (attention_layer): Linear(in_features=704, out_features=999, bias=True)
+    )
+  )
+)
+2024-11-27 05:33:04,837 - lanedet.utils.recorder - INFO - Build train loader...
+2024-11-27 05:33:04,838 - lanedet.datasets.base_dataset - INFO - Loading TuSimple annotations...
+2024-11-27 05:33:04,838 - lanedet.datasets.base_dataset - INFO - /home/ti121alk/Dokumente/lanedet
+2024-11-27 05:33:05,574 - lanedet.datasets.base_dataset - INFO - /home/ti121alk/Dokumente/lanedet
+2024-11-27 05:33:05,668 - lanedet.datasets.base_dataset - INFO - /home/ti121alk/Dokumente/lanedet
+2024-11-27 05:33:05,750 - lanedet.utils.recorder - INFO - Start training...
+2024-11-27 05:33:09,933 - lanedet.utils.recorder - INFO - epoch: 0  step: 1  lr: 0.0003  loss: 31.9569  cls_loss: 2.6525  reg_loss: 5.4314  data: 2.8352  batch: 4.1815  eta: 2 days, 4:29:57
+2024-11-27 05:33:41,779 - lanedet.utils.recorder - INFO - epoch: 0  step: 101  lr: 0.0003  loss: 6.3249  cls_loss: 0.1838  reg_loss: 4.4871  data: 0.0324  batch: 0.3461  eta: 4:27:55
+2024-11-27 05:34:16,689 - lanedet.utils.recorder - INFO - epoch: 0  step: 201  lr: 0.0003  loss: 5.5970  cls_loss: 0.1131  reg_loss: 4.4661  data: 0.1056  batch: 0.3831  eta: 4:24:36
+2024-11-27 05:34:51,171 - lanedet.utils.recorder - INFO - epoch: 0  step: 301  lr: 0.0003  loss: 5.3259  cls_loss: 0.1007  reg_loss: 4.3189  data: 0.0324  batch: 0.3173  eta: 4:22:00
+2024-11-27 05:35:25,288 - lanedet.utils.recorder - INFO - epoch: 0  step: 401  lr: 0.0003  loss: 4.4976  cls_loss: 0.0968  reg_loss: 3.5295  data: 0.0317  batch: 0.3768  eta: 4:19:45
+2024-11-27 05:35:44,087 - lanedet.utils.recorder - INFO - epoch: 0  step: 454  lr: 0.0003  loss: 4.0961  cls_loss: 0.0933  reg_loss: 3.1626  data: 0.0306  batch: 0.3520  eta: 4:20:05
+2024-11-27 05:35:44,216 - lanedet.datasets.base_dataset - INFO - Loading TuSimple annotations...
+2024-11-27 05:35:44,217 - lanedet.datasets.base_dataset - INFO - /home/ti121alk/Dokumente/lanedet
+2024-11-27 05:37:33,519 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.8518494745130274, "order": "desc"}, {"name": "FP", "value": 0.4826743350107862, "order": "asc"}, {"name": "FN", "value": 0.39842439491972254, "order": "asc"}]
+2024-11-27 05:37:33,519 - lanedet.utils.recorder - INFO - 0.8518494745130274
+2024-11-27 05:37:45,949 - lanedet.utils.recorder - INFO - Best metric: 0.8518494745130274
+2024-11-27 05:37:49,196 - lanedet.utils.recorder - INFO - epoch: 1  step: 455  lr: 0.0003  loss: 4.0627  cls_loss: 0.0911  reg_loss: 3.1518  data: 0.1731  batch: 0.4927  eta: 4:24:40
+2024-11-27 05:38:24,404 - lanedet.utils.recorder - INFO - epoch: 1  step: 555  lr: 0.0003  loss: 3.4116  cls_loss: 0.0734  reg_loss: 2.6773  data: 0.0331  batch: 0.3316  eta: 4:23:42
+2024-11-27 05:39:00,383 - lanedet.utils.recorder - INFO - epoch: 1  step: 655  lr: 0.0003  loss: 3.1432  cls_loss: 0.0696  reg_loss: 2.4472  data: 0.0336  batch: 0.3276  eta: 4:23:43
+2024-11-27 05:39:34,283 - lanedet.utils.recorder - INFO - epoch: 1  step: 755  lr: 0.0003  loss: 2.9997  cls_loss: 0.0641  reg_loss: 2.3589  data: 0.0323  batch: 0.3392  eta: 4:21:32
+2024-11-27 05:40:08,920 - lanedet.utils.recorder - INFO - epoch: 1  step: 855  lr: 0.0003  loss: 2.8416  cls_loss: 0.0566  reg_loss: 2.2757  data: 0.0334  batch: 0.3396  eta: 4:20:22
+2024-11-27 05:40:26,341 - lanedet.utils.recorder - INFO - epoch: 1  step: 908  lr: 0.0003  loss: 2.8457  cls_loss: 0.0592  reg_loss: 2.2539  data: 0.0334  batch: 0.3278  eta: 4:19:04
+2024-11-27 05:42:13,434 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9038814573277186, "order": "desc"}, {"name": "FP", "value": 0.2124730409777149, "order": "asc"}, {"name": "FN", "value": 0.1659777138749097, "order": "asc"}]
+2024-11-27 05:42:13,435 - lanedet.utils.recorder - INFO - 0.9038814573277186
+2024-11-27 05:42:25,891 - lanedet.utils.recorder - INFO - Best metric: 0.9038814573277186
+2024-11-27 05:42:29,085 - lanedet.utils.recorder - INFO - epoch: 2  step: 909  lr: 0.0003  loss: 2.8764  cls_loss: 0.0587  reg_loss: 2.2898  data: 0.1731  batch: 0.4576  eta: 4:21:17
+2024-11-27 05:43:02,916 - lanedet.utils.recorder - INFO - epoch: 2  step: 1009  lr: 0.0003  loss: 2.6017  cls_loss: 0.0418  reg_loss: 2.1840  data: 0.0330  batch: 0.3387  eta: 4:19:33
+2024-11-27 05:43:37,902 - lanedet.utils.recorder - INFO - epoch: 2  step: 1109  lr: 0.0003  loss: 2.5642  cls_loss: 0.0468  reg_loss: 2.0966  data: 0.0340  batch: 0.3520  eta: 4:18:47
+2024-11-27 05:44:11,676 - lanedet.utils.recorder - INFO - epoch: 2  step: 1209  lr: 0.0003  loss: 2.4720  cls_loss: 0.0380  reg_loss: 2.0917  data: 0.0326  batch: 0.3479  eta: 4:17:20
+2024-11-27 05:44:44,919 - lanedet.utils.recorder - INFO - epoch: 2  step: 1309  lr: 0.0003  loss: 2.3124  cls_loss: 0.0417  reg_loss: 1.8949  data: 0.0340  batch: 0.3302  eta: 4:15:43
+2024-11-27 05:45:02,245 - lanedet.utils.recorder - INFO - epoch: 2  step: 1362  lr: 0.0003  loss: 8.8680  cls_loss: 0.0523  reg_loss: 8.3451  data: 0.0328  batch: 0.3202  eta: 4:14:46
+2024-11-27 05:46:46,198 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9101515696141893, "order": "desc"}, {"name": "FP", "value": 0.2043254253534627, "order": "asc"}, {"name": "FN", "value": 0.13794033069733966, "order": "asc"}]
+2024-11-27 05:46:46,199 - lanedet.utils.recorder - INFO - 0.9101515696141893
+2024-11-27 05:46:58,649 - lanedet.utils.recorder - INFO - Best metric: 0.9101515696141893
+2024-11-27 05:47:01,829 - lanedet.utils.recorder - INFO - epoch: 3  step: 1363  lr: 0.0003  loss: 8.8874  cls_loss: 0.0546  reg_loss: 8.3412  data: 0.1732  batch: 0.4590  eta: 4:16:14
+2024-11-27 05:47:36,249 - lanedet.utils.recorder - INFO - epoch: 3  step: 1463  lr: 0.0003  loss: 2.3700  cls_loss: 0.0388  reg_loss: 1.9820  data: 0.0327  batch: 0.3605  eta: 4:15:19
+2024-11-27 05:48:11,453 - lanedet.utils.recorder - INFO - epoch: 3  step: 1563  lr: 0.0003  loss: 2.2856  cls_loss: 0.0362  reg_loss: 1.9233  data: 0.1873  batch: 0.4002  eta: 4:14:49
+2024-11-27 05:48:37,195 - lanedet.utils.recorder - INFO - epoch: 3  step: 1663  lr: 0.0003  loss: 2.5735  cls_loss: 0.0507  reg_loss: 2.0664  data: 0.0325  batch: 0.2371  eta: 4:10:11
+2024-11-27 05:49:03,708 - lanedet.utils.recorder - INFO - epoch: 3  step: 1763  lr: 0.0003  loss: 2.4593  cls_loss: 0.0497  reg_loss: 1.9618  data: 0.1529  batch: 0.3622  eta: 4:06:20
+2024-11-27 05:49:24,393 - lanedet.utils.recorder - INFO - epoch: 3  step: 1816  lr: 0.0003  loss: 2.3490  cls_loss: 0.0445  reg_loss: 1.9042  data: 0.1727  batch: 0.3827  eta: 4:07:06
+2024-11-27 05:50:54,072 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9182633468556383, "order": "desc"}, {"name": "FP", "value": 0.16407860052719658, "order": "asc"}, {"name": "FN", "value": 0.10756649892163951, "order": "asc"}]
+2024-11-27 05:50:54,087 - lanedet.utils.recorder - INFO - 0.9182633468556383
+2024-11-27 05:51:06,753 - lanedet.utils.recorder - INFO - Best metric: 0.9182633468556383
+2024-11-27 05:51:09,897 - lanedet.utils.recorder - INFO - epoch: 4  step: 1817  lr: 0.0003  loss: 2.3363  cls_loss: 0.0437  reg_loss: 1.8988  data: 0.3097  batch: 0.5237  eta: 4:08:10
+2024-11-27 05:51:38,994 - lanedet.utils.recorder - INFO - epoch: 4  step: 1917  lr: 0.0003  loss: 2.2384  cls_loss: 0.0438  reg_loss: 1.7999  data: 0.2287  batch: 0.4334  eta: 4:05:38
+2024-11-27 05:52:12,594 - lanedet.utils.recorder - INFO - epoch: 4  step: 2017  lr: 0.0003  loss: 2.2526  cls_loss: 0.0444  reg_loss: 1.8083  data: 0.0329  batch: 0.2393  eta: 4:04:54
+2024-11-27 05:52:36,470 - lanedet.utils.recorder - INFO - epoch: 4  step: 2117  lr: 0.0003  loss: 2.2824  cls_loss: 0.0412  reg_loss: 1.8707  data: 0.0319  batch: 0.2408  eta: 4:00:53
+2024-11-27 05:53:00,426 - lanedet.utils.recorder - INFO - epoch: 4  step: 2217  lr: 0.0003  loss: 2.2312  cls_loss: 0.0430  reg_loss: 1.8015  data: 0.0325  batch: 0.2394  eta: 3:57:14
+2024-11-27 05:53:12,561 - lanedet.utils.recorder - INFO - epoch: 4  step: 2270  lr: 0.0003  loss: 2.3174  cls_loss: 0.0471  reg_loss: 1.8462  data: 0.0354  batch: 0.2153  eta: 3:55:14
+2024-11-27 05:54:14,853 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9101868730957512, "order": "desc"}, {"name": "FP", "value": 0.150503235082673, "order": "asc"}, {"name": "FN", "value": 0.13365684160076655, "order": "asc"}]
+2024-11-27 05:54:14,854 - lanedet.utils.recorder - INFO - 0.9101868730957512
+2024-11-27 05:54:14,854 - lanedet.utils.recorder - INFO - Best metric: 0.9182633468556383
+2024-11-27 05:54:18,058 - lanedet.utils.recorder - INFO - epoch: 5  step: 2271  lr: 0.0003  loss: 2.3865  cls_loss: 0.0502  reg_loss: 1.8849  data: 0.1766  batch: 0.3608  eta: 3:56:07
+2024-11-27 05:54:41,709 - lanedet.utils.recorder - INFO - epoch: 5  step: 2371  lr: 0.0003  loss: 2.7881  cls_loss: 0.0459  reg_loss: 2.3287  data: 0.0320  batch: 0.2340  eta: 3:52:45
+2024-11-27 05:55:05,760 - lanedet.utils.recorder - INFO - epoch: 5  step: 2471  lr: 0.0003  loss: 2.1869  cls_loss: 0.0380  reg_loss: 1.8064  data: 0.0323  batch: 0.2445  eta: 3:49:44
+2024-11-27 05:55:29,592 - lanedet.utils.recorder - INFO - epoch: 5  step: 2571  lr: 0.0003  loss: 2.1165  cls_loss: 0.0315  reg_loss: 1.8018  data: 0.0333  batch: 0.2396  eta: 3:46:52
+2024-11-27 05:55:53,381 - lanedet.utils.recorder - INFO - epoch: 5  step: 2671  lr: 0.0003  loss: 2.1472  cls_loss: 0.0479  reg_loss: 1.6679  data: 0.0338  batch: 0.2417  eta: 3:44:11
+2024-11-27 05:56:05,839 - lanedet.utils.recorder - INFO - epoch: 5  step: 2724  lr: 0.0003  loss: 2.2107  cls_loss: 0.0370  reg_loss: 1.8405  data: 0.0332  batch: 0.2265  eta: 3:42:47
+2024-11-27 05:57:08,311 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9327901946184683, "order": "desc"}, {"name": "FP", "value": 0.10114426072369945, "order": "asc"}, {"name": "FN", "value": 0.06524083393242275, "order": "asc"}]
+2024-11-27 05:57:08,311 - lanedet.utils.recorder - INFO - 0.9327901946184683
+2024-11-27 05:57:20,776 - lanedet.utils.recorder - INFO - Best metric: 0.9327901946184683
+2024-11-27 05:57:23,957 - lanedet.utils.recorder - INFO - epoch: 6  step: 2725  lr: 0.0003  loss: 2.2068  cls_loss: 0.0361  reg_loss: 1.8458  data: 0.1718  batch: 0.3686  eta: 3:43:30
+2024-11-27 05:57:47,788 - lanedet.utils.recorder - INFO - epoch: 6  step: 2825  lr: 0.0003  loss: 2.0532  cls_loss: 0.0334  reg_loss: 1.7190  data: 0.0341  batch: 0.2403  eta: 3:41:02
+2024-11-27 05:58:11,526 - lanedet.utils.recorder - INFO - epoch: 6  step: 2925  lr: 0.0003  loss: 2.2349  cls_loss: 0.0450  reg_loss: 1.7846  data: 0.0318  batch: 0.2388  eta: 3:38:42
+2024-11-27 05:58:35,464 - lanedet.utils.recorder - INFO - epoch: 6  step: 3025  lr: 0.0003  loss: 1.9097  cls_loss: 0.0298  reg_loss: 1.6122  data: 0.0325  batch: 0.2395  eta: 3:36:32
+2024-11-27 05:58:59,445 - lanedet.utils.recorder - INFO - epoch: 6  step: 3125  lr: 0.0003  loss: 2.3400  cls_loss: 0.0504  reg_loss: 1.8358  data: 0.0320  batch: 0.2364  eta: 3:34:29
+2024-11-27 05:59:11,743 - lanedet.utils.recorder - INFO - epoch: 6  step: 3178  lr: 0.0003  loss: 1.8885  cls_loss: 0.0349  reg_loss: 1.5392  data: 0.0330  batch: 0.2240  eta: 3:33:21
+2024-11-27 06:00:14,419 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9251277344151193, "order": "desc"}, {"name": "FP", "value": 0.1418883297387956, "order": "asc"}, {"name": "FN", "value": 0.08516055595494879, "order": "asc"}]
+2024-11-27 06:00:14,419 - lanedet.utils.recorder - INFO - 0.9251277344151193
+2024-11-27 06:00:14,420 - lanedet.utils.recorder - INFO - Best metric: 0.9327901946184683
+2024-11-27 06:00:17,575 - lanedet.utils.recorder - INFO - epoch: 7  step: 3179  lr: 0.0003  loss: 1.8901  cls_loss: 0.0337  reg_loss: 1.5533  data: 0.1733  batch: 0.3668  eta: 3:33:58
+2024-11-27 06:00:41,518 - lanedet.utils.recorder - INFO - epoch: 7  step: 3279  lr: 0.0003  loss: 2.1481  cls_loss: 0.0370  reg_loss: 1.7777  data: 0.0325  batch: 0.2410  eta: 3:32:03
+2024-11-27 06:01:05,253 - lanedet.utils.recorder - INFO - epoch: 7  step: 3379  lr: 0.0003  loss: 2.0568  cls_loss: 0.0348  reg_loss: 1.7091  data: 0.0323  batch: 0.2382  eta: 3:30:11
+2024-11-27 06:01:29,022 - lanedet.utils.recorder - INFO - epoch: 7  step: 3479  lr: 0.0003  loss: 2.0694  cls_loss: 0.0349  reg_loss: 1.7203  data: 0.0330  batch: 0.2407  eta: 3:28:24
+2024-11-27 06:01:52,913 - lanedet.utils.recorder - INFO - epoch: 7  step: 3579  lr: 0.0003  loss: 2.1215  cls_loss: 0.0444  reg_loss: 1.6773  data: 0.0336  batch: 0.2362  eta: 3:26:43
+2024-11-27 06:02:05,160 - lanedet.utils.recorder - INFO - epoch: 7  step: 3632  lr: 0.0003  loss: 2.0537  cls_loss: 0.0472  reg_loss: 1.5817  data: 0.0351  batch: 0.2183  eta: 3:25:47
+2024-11-27 06:03:08,152 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9290581886960407, "order": "desc"}, {"name": "FP", "value": 0.22232806134675387, "order": "asc"}, {"name": "FN", "value": 0.060867481428229155, "order": "asc"}]
+2024-11-27 06:03:08,153 - lanedet.utils.recorder - INFO - 0.9290581886960407
+2024-11-27 06:03:08,153 - lanedet.utils.recorder - INFO - Best metric: 0.9327901946184683
+2024-11-27 06:03:11,419 - lanedet.utils.recorder - INFO - epoch: 8  step: 3633  lr: 0.0003  loss: 2.0413  cls_loss: 0.0449  reg_loss: 1.5921  data: 0.1807  batch: 0.3670  eta: 3:26:20
+2024-11-27 06:03:35,454 - lanedet.utils.recorder - INFO - epoch: 8  step: 3733  lr: 0.0003  loss: 1.9541  cls_loss: 0.0414  reg_loss: 1.5399  data: 0.0330  batch: 0.2383  eta: 3:24:46
+2024-11-27 06:03:59,082 - lanedet.utils.recorder - INFO - epoch: 8  step: 3833  lr: 0.0003  loss: 1.9042  cls_loss: 0.0270  reg_loss: 1.6340  data: 0.0336  batch: 0.2341  eta: 3:23:12
+2024-11-27 06:04:22,883 - lanedet.utils.recorder - INFO - epoch: 8  step: 3933  lr: 0.0003  loss: 1.8507  cls_loss: 0.0337  reg_loss: 1.5139  data: 0.0330  batch: 0.2373  eta: 3:21:43
+2024-11-27 06:04:46,644 - lanedet.utils.recorder - INFO - epoch: 8  step: 4033  lr: 0.0003  loss: 1.8882  cls_loss: 0.0239  reg_loss: 1.6491  data: 0.0332  batch: 0.2383  eta: 3:20:17
+2024-11-27 06:04:58,745 - lanedet.utils.recorder - INFO - epoch: 8  step: 4086  lr: 0.0003  loss: 2.0397  cls_loss: 0.0340  reg_loss: 1.6993  data: 0.0347  batch: 0.2150  eta: 3:19:27
+2024-11-27 06:06:01,353 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.93924431293006, "order": "desc"}, {"name": "FP", "value": 0.07828300982506547, "order": "asc"}, {"name": "FN", "value": 0.05484663311766109, "order": "asc"}]
+2024-11-27 06:06:01,354 - lanedet.utils.recorder - INFO - 0.93924431293006
+2024-11-27 06:06:13,810 - lanedet.utils.recorder - INFO - Best metric: 0.93924431293006
+2024-11-27 06:06:16,890 - lanedet.utils.recorder - INFO - epoch: 9  step: 4087  lr: 0.0003  loss: 2.0563  cls_loss: 0.0342  reg_loss: 1.7139  data: 0.1711  batch: 0.3537  eta: 3:19:54
+2024-11-27 06:06:40,522 - lanedet.utils.recorder - INFO - epoch: 9  step: 4187  lr: 0.0003  loss: 1.9339  cls_loss: 0.0372  reg_loss: 1.5623  data: 0.0327  batch: 0.2354  eta: 3:18:31
+2024-11-27 06:07:04,342 - lanedet.utils.recorder - INFO - epoch: 9  step: 4287  lr: 0.0003  loss: 5.7393  cls_loss: 0.0367  reg_loss: 5.3722  data: 0.0323  batch: 0.2402  eta: 3:17:12
+2024-11-27 06:07:28,322 - lanedet.utils.recorder - INFO - epoch: 9  step: 4387  lr: 0.0003  loss: 1.7903  cls_loss: 0.0246  reg_loss: 1.5441  data: 0.0336  batch: 0.2384  eta: 3:15:57
+2024-11-27 06:07:52,419 - lanedet.utils.recorder - INFO - epoch: 9  step: 4487  lr: 0.0003  loss: 1.8591  cls_loss: 0.0283  reg_loss: 1.5765  data: 0.0333  batch: 0.2384  eta: 3:14:45
+2024-11-27 06:08:04,611 - lanedet.utils.recorder - INFO - epoch: 9  step: 4540  lr: 0.0003  loss: 1.9696  cls_loss: 0.0401  reg_loss: 1.5684  data: 0.0347  batch: 0.2237  eta: 3:14:03
+2024-11-27 06:09:07,034 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9274470661737012, "order": "desc"}, {"name": "FP", "value": 0.09748382458662778, "order": "asc"}, {"name": "FN", "value": 0.06209561466570818, "order": "asc"}]
+2024-11-27 06:09:07,035 - lanedet.utils.recorder - INFO - 0.9274470661737012
+2024-11-27 06:09:07,035 - lanedet.utils.recorder - INFO - Best metric: 0.93924431293006
+2024-11-27 06:09:10,252 - lanedet.utils.recorder - INFO - epoch: 10  step: 4541  lr: 0.0003  loss: 1.9194  cls_loss: 0.0356  reg_loss: 1.5630  data: 0.1758  batch: 0.3699  eta: 3:14:29
+2024-11-27 06:09:34,261 - lanedet.utils.recorder - INFO - epoch: 10  step: 4641  lr: 0.0003  loss: 1.8193  cls_loss: 0.0262  reg_loss: 1.5578  data: 0.0326  batch: 0.2399  eta: 3:13:19
+2024-11-27 06:09:57,731 - lanedet.utils.recorder - INFO - epoch: 10  step: 4741  lr: 0.0003  loss: 1.8513  cls_loss: 0.0308  reg_loss: 1.5436  data: 0.0334  batch: 0.2339  eta: 3:12:06
+2024-11-27 06:10:21,242 - lanedet.utils.recorder - INFO - epoch: 10  step: 4841  lr: 0.0003  loss: 1.7649  cls_loss: 0.0238  reg_loss: 1.5267  data: 0.0330  batch: 0.2360  eta: 3:10:57
+2024-11-27 06:10:44,931 - lanedet.utils.recorder - INFO - epoch: 10  step: 4941  lr: 0.0003  loss: 1.9588  cls_loss: 0.0369  reg_loss: 1.5897  data: 0.0327  batch: 0.2372  eta: 3:09:50
+2024-11-27 06:10:56,975 - lanedet.utils.recorder - INFO - epoch: 10  step: 4994  lr: 0.0003  loss: 1.8018  cls_loss: 0.0304  reg_loss: 1.4980  data: 0.0354  batch: 0.2145  eta: 3:09:11
+2024-11-27 06:11:59,601 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9394384820786656, "order": "desc"}, {"name": "FP", "value": 0.07643182362808487, "order": "asc"}, {"name": "FN", "value": 0.04672897196261674, "order": "asc"}]
+2024-11-27 06:11:59,601 - lanedet.utils.recorder - INFO - 0.9394384820786656
+2024-11-27 06:12:12,060 - lanedet.utils.recorder - INFO - Best metric: 0.9394384820786656
+2024-11-27 06:12:15,232 - lanedet.utils.recorder - INFO - epoch: 11  step: 4995  lr: 0.0003  loss: 1.7664  cls_loss: 0.0292  reg_loss: 1.4740  data: 0.1750  batch: 0.3574  eta: 3:09:34
+2024-11-27 06:12:39,094 - lanedet.utils.recorder - INFO - epoch: 11  step: 5095  lr: 0.0003  loss: 1.8763  cls_loss: 0.0338  reg_loss: 1.5380  data: 0.0342  batch: 0.2354  eta: 3:08:30
+2024-11-27 06:13:02,743 - lanedet.utils.recorder - INFO - epoch: 11  step: 5195  lr: 0.0003  loss: 1.6507  cls_loss: 0.0283  reg_loss: 1.3675  data: 0.0333  batch: 0.2392  eta: 3:07:27
+2024-11-27 06:13:26,252 - lanedet.utils.recorder - INFO - epoch: 11  step: 5295  lr: 0.0003  loss: 1.7841  cls_loss: 0.0324  reg_loss: 1.4602  data: 0.0327  batch: 0.2354  eta: 3:06:24
+2024-11-27 06:13:49,586 - lanedet.utils.recorder - INFO - epoch: 11  step: 5395  lr: 0.0003  loss: 1.7398  cls_loss: 0.0261  reg_loss: 1.4792  data: 0.0339  batch: 0.2331  eta: 3:05:22
+2024-11-27 06:14:01,606 - lanedet.utils.recorder - INFO - epoch: 11  step: 5448  lr: 0.0003  loss: 1.8175  cls_loss: 0.0303  reg_loss: 1.5142  data: 0.0347  batch: 0.2196  eta: 3:04:47
+2024-11-27 06:15:04,194 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9386420141385097, "order": "desc"}, {"name": "FP", "value": 0.08556194584231928, "order": "asc"}, {"name": "FN", "value": 0.046998562185477974, "order": "asc"}]
+2024-11-27 06:15:04,195 - lanedet.utils.recorder - INFO - 0.9386420141385097
+2024-11-27 06:15:04,196 - lanedet.utils.recorder - INFO - Best metric: 0.9394384820786656
+2024-11-27 06:15:07,275 - lanedet.utils.recorder - INFO - epoch: 12  step: 5449  lr: 0.0003  loss: 1.8012  cls_loss: 0.0284  reg_loss: 1.5173  data: 0.1705  batch: 0.3591  eta: 3:05:06
+2024-11-27 06:15:30,961 - lanedet.utils.recorder - INFO - epoch: 12  step: 5549  lr: 0.0003  loss: 1.8262  cls_loss: 0.0333  reg_loss: 1.4936  data: 0.0331  batch: 0.2301  eta: 3:04:08
+2024-11-27 06:15:54,448 - lanedet.utils.recorder - INFO - epoch: 12  step: 5649  lr: 0.0003  loss: 1.7842  cls_loss: 0.0252  reg_loss: 1.5318  data: 0.0325  batch: 0.2344  eta: 3:03:09
+2024-11-27 06:16:18,123 - lanedet.utils.recorder - INFO - epoch: 12  step: 5749  lr: 0.0003  loss: 1.8815  cls_loss: 0.0311  reg_loss: 1.5706  data: 0.0328  batch: 0.2351  eta: 3:02:13
+2024-11-27 06:16:41,774 - lanedet.utils.recorder - INFO - epoch: 12  step: 5849  lr: 0.0003  loss: 2.0560  cls_loss: 0.0348  reg_loss: 1.7079  data: 0.0336  batch: 0.2322  eta: 3:01:18
+2024-11-27 06:16:53,952 - lanedet.utils.recorder - INFO - epoch: 12  step: 5902  lr: 0.0003  loss: 1.8063  cls_loss: 0.0321  reg_loss: 1.4854  data: 0.0341  batch: 0.2194  eta: 3:00:47
+2024-11-27 06:17:56,370 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.941973913936529, "order": "desc"}, {"name": "FP", "value": 0.0789779535106633, "order": "asc"}, {"name": "FN", "value": 0.046908698777857555, "order": "asc"}]
+2024-11-27 06:17:56,371 - lanedet.utils.recorder - INFO - 0.941973913936529
+2024-11-27 06:18:08,827 - lanedet.utils.recorder - INFO - Best metric: 0.941973913936529
+2024-11-27 06:18:11,964 - lanedet.utils.recorder - INFO - epoch: 13  step: 5903  lr: 0.0003  loss: 1.8083  cls_loss: 0.0329  reg_loss: 1.4797  data: 0.1725  batch: 0.3597  eta: 3:01:05
+2024-11-27 06:18:35,838 - lanedet.utils.recorder - INFO - epoch: 13  step: 6003  lr: 0.0003  loss: 1.7262  cls_loss: 0.0297  reg_loss: 1.4292  data: 0.0328  batch: 0.2396  eta: 3:00:13
+2024-11-27 06:18:59,388 - lanedet.utils.recorder - INFO - epoch: 13  step: 6103  lr: 0.0003  loss: 5.6755  cls_loss: 0.0263  reg_loss: 5.4127  data: 0.0331  batch: 0.2349  eta: 2:59:20
+2024-11-27 06:19:23,157 - lanedet.utils.recorder - INFO - epoch: 13  step: 6203  lr: 0.0003  loss: 1.7633  cls_loss: 0.0250  reg_loss: 1.5137  data: 0.0333  batch: 0.2372  eta: 2:58:28
+2024-11-27 06:19:46,867 - lanedet.utils.recorder - INFO - epoch: 13  step: 6303  lr: 0.0003  loss: 1.8741  cls_loss: 0.0423  reg_loss: 1.4516  data: 0.0327  batch: 0.2400  eta: 2:57:38
+2024-11-27 06:19:59,170 - lanedet.utils.recorder - INFO - epoch: 13  step: 6356  lr: 0.0003  loss: 1.6813  cls_loss: 0.0252  reg_loss: 1.4290  data: 0.0338  batch: 0.2208  eta: 2:57:10
+2024-11-27 06:21:01,841 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9409447639587806, "order": "desc"}, {"name": "FP", "value": 0.08292595255212028, "order": "asc"}, {"name": "FN", "value": 0.043973160795590646, "order": "asc"}]
+2024-11-27 06:21:01,842 - lanedet.utils.recorder - INFO - 0.9409447639587806
+2024-11-27 06:21:01,842 - lanedet.utils.recorder - INFO - Best metric: 0.941973913936529
+2024-11-27 06:21:04,916 - lanedet.utils.recorder - INFO - epoch: 14  step: 6357  lr: 0.0003  loss: 1.7088  cls_loss: 0.0258  reg_loss: 1.4510  data: 0.1693  batch: 0.3601  eta: 2:57:26
+2024-11-27 06:21:28,653 - lanedet.utils.recorder - INFO - epoch: 14  step: 6457  lr: 0.0003  loss: 1.7373  cls_loss: 0.0260  reg_loss: 1.4769  data: 0.0323  batch: 0.2341  eta: 2:56:37
+2024-11-27 06:21:51,978 - lanedet.utils.recorder - INFO - epoch: 14  step: 6557  lr: 0.0003  loss: 1.6094  cls_loss: 0.0220  reg_loss: 1.3891  data: 0.0340  batch: 0.2323  eta: 2:55:46
+2024-11-27 06:22:15,756 - lanedet.utils.recorder - INFO - epoch: 14  step: 6657  lr: 0.0003  loss: 1.8745  cls_loss: 0.0409  reg_loss: 1.4658  data: 0.0324  batch: 0.2356  eta: 2:54:58
+2024-11-27 06:22:39,359 - lanedet.utils.recorder - INFO - epoch: 14  step: 6757  lr: 0.0003  loss: 1.8529  cls_loss: 0.0338  reg_loss: 1.5144  data: 0.0341  batch: 0.2289  eta: 2:54:10
+2024-11-27 06:22:51,583 - lanedet.utils.recorder - INFO - epoch: 14  step: 6810  lr: 0.0003  loss: 1.7104  cls_loss: 0.0260  reg_loss: 1.4500  data: 0.0338  batch: 0.2227  eta: 2:53:44
+2024-11-27 06:23:53,965 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9264328934305573, "order": "desc"}, {"name": "FP", "value": 0.09430265995686501, "order": "asc"}, {"name": "FN", "value": 0.055565540378624434, "order": "asc"}]
+2024-11-27 06:23:53,966 - lanedet.utils.recorder - INFO - 0.9264328934305573
+2024-11-27 06:23:53,967 - lanedet.utils.recorder - INFO - Best metric: 0.941973913936529
+2024-11-27 06:23:57,071 - lanedet.utils.recorder - INFO - epoch: 15  step: 6811  lr: 0.0003  loss: 1.7098  cls_loss: 0.0255  reg_loss: 1.4546  data: 0.1720  batch: 0.3629  eta: 2:53:59
+2024-11-27 06:24:20,401 - lanedet.utils.recorder - INFO - epoch: 15  step: 6911  lr: 0.0003  loss: 1.7727  cls_loss: 0.0298  reg_loss: 1.4751  data: 0.0339  batch: 0.2322  eta: 2:53:10
+2024-11-27 06:24:44,086 - lanedet.utils.recorder - INFO - epoch: 15  step: 7011  lr: 0.0003  loss: 1.7143  cls_loss: 0.0214  reg_loss: 1.5006  data: 0.0327  batch: 0.2389  eta: 2:52:24
+2024-11-27 06:25:07,543 - lanedet.utils.recorder - INFO - epoch: 15  step: 7111  lr: 0.0003  loss: 1.8483  cls_loss: 0.0279  reg_loss: 1.5694  data: 0.0316  batch: 0.2325  eta: 2:51:38
+2024-11-27 06:25:31,382 - lanedet.utils.recorder - INFO - epoch: 15  step: 7211  lr: 0.0003  loss: 10.1180  cls_loss: 0.0461  reg_loss: 9.6570  data: 0.0341  batch: 0.2363  eta: 2:50:54
+2024-11-27 06:25:43,706 - lanedet.utils.recorder - INFO - epoch: 15  step: 7264  lr: 0.0003  loss: 1.7869  cls_loss: 0.0265  reg_loss: 1.5223  data: 0.0335  batch: 0.2249  eta: 2:50:29
+2024-11-27 06:26:46,455 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9342050083872493, "order": "desc"}, {"name": "FP", "value": 0.07377186676252062, "order": "asc"}, {"name": "FN", "value": 0.051282051282051176, "order": "asc"}]
+2024-11-27 06:26:46,456 - lanedet.utils.recorder - INFO - 0.9342050083872493
+2024-11-27 06:26:46,456 - lanedet.utils.recorder - INFO - Best metric: 0.941973913936529
+2024-11-27 06:26:49,422 - lanedet.utils.recorder - INFO - epoch: 16  step: 7265  lr: 0.0003  loss: 1.7774  cls_loss: 0.0254  reg_loss: 1.5236  data: 0.1625  batch: 0.3585  eta: 2:50:43
+2024-11-27 06:27:13,270 - lanedet.utils.recorder - INFO - epoch: 16  step: 7365  lr: 0.0003  loss: 1.6445  cls_loss: 0.0213  reg_loss: 1.4320  data: 0.0337  batch: 0.2403  eta: 2:50:00
+2024-11-27 06:27:36,814 - lanedet.utils.recorder - INFO - epoch: 16  step: 7465  lr: 0.0003  loss: 1.7388  cls_loss: 0.0269  reg_loss: 1.4703  data: 0.0317  batch: 0.2350  eta: 2:49:15
+2024-11-27 06:28:00,156 - lanedet.utils.recorder - INFO - epoch: 16  step: 7565  lr: 0.0003  loss: 1.6903  cls_loss: 0.0272  reg_loss: 1.4188  data: 0.0333  batch: 0.2346  eta: 2:48:31
+2024-11-27 06:28:23,796 - lanedet.utils.recorder - INFO - epoch: 16  step: 7665  lr: 0.0003  loss: 1.6245  cls_loss: 0.0229  reg_loss: 1.3955  data: 0.0337  batch: 0.2406  eta: 2:47:48
+2024-11-27 06:28:35,776 - lanedet.utils.recorder - INFO - epoch: 16  step: 7718  lr: 0.0003  loss: 9.3031  cls_loss: 0.0253  reg_loss: 9.0498  data: 0.0342  batch: 0.2167  eta: 2:47:23
+2024-11-27 06:29:38,189 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9429731094450712, "order": "desc"}, {"name": "FP", "value": 0.06138269829858571, "order": "asc"}, {"name": "FN", "value": 0.04687874430865076, "order": "asc"}]
+2024-11-27 06:29:38,190 - lanedet.utils.recorder - INFO - 0.9429731094450712
+2024-11-27 06:29:50,645 - lanedet.utils.recorder - INFO - Best metric: 0.9429731094450712
+2024-11-27 06:29:53,804 - lanedet.utils.recorder - INFO - epoch: 17  step: 7719  lr: 0.0003  loss: 9.3042  cls_loss: 0.0254  reg_loss: 9.0506  data: 0.1739  batch: 0.3589  eta: 2:47:36
+2024-11-27 06:30:17,321 - lanedet.utils.recorder - INFO - epoch: 17  step: 7819  lr: 0.0003  loss: 1.7750  cls_loss: 0.0341  reg_loss: 1.4341  data: 0.0320  batch: 0.2336  eta: 2:46:54
+2024-11-27 06:30:40,943 - lanedet.utils.recorder - INFO - epoch: 17  step: 7919  lr: 0.0003  loss: 1.5724  cls_loss: 0.0188  reg_loss: 1.3848  data: 0.0324  batch: 0.2351  eta: 2:46:12
+2024-11-27 06:31:04,334 - lanedet.utils.recorder - INFO - epoch: 17  step: 8019  lr: 0.0003  loss: 1.7914  cls_loss: 0.0325  reg_loss: 1.4665  data: 0.0324  batch: 0.2285  eta: 2:45:30
+2024-11-27 06:31:27,815 - lanedet.utils.recorder - INFO - epoch: 17  step: 8119  lr: 0.0003  loss: 1.6432  cls_loss: 0.0204  reg_loss: 1.4393  data: 0.0333  batch: 0.2374  eta: 2:44:48
+2024-11-27 06:31:39,886 - lanedet.utils.recorder - INFO - epoch: 17  step: 8172  lr: 0.0003  loss: 1.6443  cls_loss: 0.0238  reg_loss: 1.4062  data: 0.0332  batch: 0.2192  eta: 2:44:25
+2024-11-27 06:32:42,457 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9383478184587993, "order": "desc"}, {"name": "FP", "value": 0.06407260963335693, "order": "asc"}, {"name": "FN", "value": 0.04406302420321104, "order": "asc"}]
+2024-11-27 06:32:42,458 - lanedet.utils.recorder - INFO - 0.9383478184587993
+2024-11-27 06:32:42,458 - lanedet.utils.recorder - INFO - Best metric: 0.9429731094450712
+2024-11-27 06:32:45,502 - lanedet.utils.recorder - INFO - epoch: 18  step: 8173  lr: 0.0003  loss: 1.6532  cls_loss: 0.0256  reg_loss: 1.3967  data: 0.1688  batch: 0.3565  eta: 2:44:37
+2024-11-27 06:33:09,193 - lanedet.utils.recorder - INFO - epoch: 18  step: 8273  lr: 0.0003  loss: 1.6874  cls_loss: 0.0276  reg_loss: 1.4116  data: 0.0322  batch: 0.2380  eta: 2:43:57
+2024-11-27 06:33:32,647 - lanedet.utils.recorder - INFO - epoch: 18  step: 8373  lr: 0.0003  loss: 1.6117  cls_loss: 0.0216  reg_loss: 1.3961  data: 0.0331  batch: 0.2323  eta: 2:43:16
+2024-11-27 06:33:56,526 - lanedet.utils.recorder - INFO - epoch: 18  step: 8473  lr: 0.0003  loss: 1.5467  cls_loss: 0.0259  reg_loss: 1.2881  data: 0.0334  batch: 0.2420  eta: 2:42:38
+2024-11-27 06:34:20,098 - lanedet.utils.recorder - INFO - epoch: 18  step: 8573  lr: 0.0003  loss: 1.6210  cls_loss: 0.0269  reg_loss: 1.3518  data: 0.0335  batch: 0.2367  eta: 2:41:58
+2024-11-27 06:34:32,316 - lanedet.utils.recorder - INFO - epoch: 18  step: 8626  lr: 0.0003  loss: 11.5166  cls_loss: 0.0340  reg_loss: 11.1769  data: 0.0343  batch: 0.2234  eta: 2:41:37
+2024-11-27 06:35:34,970 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9310153923179613, "order": "desc"}, {"name": "FP", "value": 0.10594296669062943, "order": "asc"}, {"name": "FN", "value": 0.05352863647256162, "order": "asc"}]
+2024-11-27 06:35:34,970 - lanedet.utils.recorder - INFO - 0.9310153923179613
+2024-11-27 06:35:34,971 - lanedet.utils.recorder - INFO - Best metric: 0.9429731094450712
+2024-11-27 06:35:38,075 - lanedet.utils.recorder - INFO - epoch: 19  step: 8627  lr: 0.0003  loss: 11.5160  cls_loss: 0.0338  reg_loss: 11.1781  data: 0.1733  batch: 0.3638  eta: 2:41:48
+2024-11-27 06:36:01,512 - lanedet.utils.recorder - INFO - epoch: 19  step: 8727  lr: 0.0003  loss: 1.6296  cls_loss: 0.0224  reg_loss: 1.4061  data: 0.0340  batch: 0.2288  eta: 2:41:08
+2024-11-27 06:36:25,004 - lanedet.utils.recorder - INFO - epoch: 19  step: 8827  lr: 0.0003  loss: 9.8271  cls_loss: 0.0322  reg_loss: 9.5055  data: 0.0340  batch: 0.2319  eta: 2:40:29
+2024-11-27 06:36:48,438 - lanedet.utils.recorder - INFO - epoch: 19  step: 8927  lr: 0.0003  loss: 1.5491  cls_loss: 0.0240  reg_loss: 1.3087  data: 0.0334  batch: 0.2352  eta: 2:39:51
+2024-11-27 06:37:12,192 - lanedet.utils.recorder - INFO - epoch: 19  step: 9027  lr: 0.0003  loss: 1.9032  cls_loss: 0.0417  reg_loss: 1.4864  data: 0.0322  batch: 0.2386  eta: 2:39:13
+2024-11-27 06:37:24,358 - lanedet.utils.recorder - INFO - epoch: 19  step: 9080  lr: 0.0003  loss: 1.6189  cls_loss: 0.0227  reg_loss: 1.3916  data: 0.0338  batch: 0.2201  eta: 2:38:52
+2024-11-27 06:38:27,108 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9396492331655866, "order": "desc"}, {"name": "FP", "value": 0.05927390366642677, "order": "asc"}, {"name": "FN", "value": 0.051072369997603555, "order": "asc"}]
+2024-11-27 06:38:27,109 - lanedet.utils.recorder - INFO - 0.9396492331655866
+2024-11-27 06:38:27,109 - lanedet.utils.recorder - INFO - Best metric: 0.9429731094450712
+2024-11-27 06:38:29,801 - lanedet.utils.recorder - INFO - epoch: 20  step: 9081  lr: 0.0003  loss: 1.6234  cls_loss: 0.0222  reg_loss: 1.4019  data: 0.1518  batch: 0.3398  eta: 2:39:01
+2024-11-27 06:38:53,620 - lanedet.utils.recorder - INFO - epoch: 20  step: 9181  lr: 0.0003  loss: 1.8001  cls_loss: 0.0296  reg_loss: 1.5039  data: 0.0319  batch: 0.2362  eta: 2:38:25
+2024-11-27 06:39:17,250 - lanedet.utils.recorder - INFO - epoch: 20  step: 9281  lr: 0.0003  loss: 1.6493  cls_loss: 0.0340  reg_loss: 1.3095  data: 0.0329  batch: 0.2429  eta: 2:37:48
+2024-11-27 06:39:40,896 - lanedet.utils.recorder - INFO - epoch: 20  step: 9381  lr: 0.0003  loss: 1.5637  cls_loss: 0.0188  reg_loss: 1.3753  data: 0.0319  batch: 0.2390  eta: 2:37:11
+2024-11-27 06:40:04,683 - lanedet.utils.recorder - INFO - epoch: 20  step: 9481  lr: 0.0003  loss: 1.6007  cls_loss: 0.0204  reg_loss: 1.3971  data: 0.0325  batch: 0.2407  eta: 2:36:35
+2024-11-27 06:40:16,750 - lanedet.utils.recorder - INFO - epoch: 20  step: 9534  lr: 0.0003  loss: 5.0688  cls_loss: 0.0254  reg_loss: 4.8143  data: 0.0352  batch: 0.2170  eta: 2:36:14
+2024-11-27 06:41:19,259 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9464948991818102, "order": "desc"}, {"name": "FP", "value": 0.07843877306494088, "order": "asc"}, {"name": "FN", "value": 0.03867121974598605, "order": "asc"}]
+2024-11-27 06:41:19,260 - lanedet.utils.recorder - INFO - 0.9464948991818102
+2024-11-27 06:41:31,714 - lanedet.utils.recorder - INFO - Best metric: 0.9464948991818102
+2024-11-27 06:41:35,094 - lanedet.utils.recorder - INFO - epoch: 21  step: 9535  lr: 0.0003  loss: 5.0772  cls_loss: 0.0254  reg_loss: 4.8231  data: 0.1860  batch: 0.3703  eta: 2:36:25
+2024-11-27 06:41:58,693 - lanedet.utils.recorder - INFO - epoch: 21  step: 9635  lr: 0.0003  loss: 1.5878  cls_loss: 0.0272  reg_loss: 1.3156  data: 0.0333  batch: 0.2362  eta: 2:35:49
+2024-11-27 06:42:22,188 - lanedet.utils.recorder - INFO - epoch: 21  step: 9735  lr: 0.0003  loss: 1.7553  cls_loss: 0.0235  reg_loss: 1.5204  data: 0.0331  batch: 0.2345  eta: 2:35:12
+2024-11-27 06:42:45,841 - lanedet.utils.recorder - INFO - epoch: 21  step: 9835  lr: 0.0003  loss: 1.6023  cls_loss: 0.0210  reg_loss: 1.3926  data: 0.0325  batch: 0.2365  eta: 2:34:37
+2024-11-27 06:43:09,528 - lanedet.utils.recorder - INFO - epoch: 21  step: 9935  lr: 0.0003  loss: 1.6073  cls_loss: 0.0242  reg_loss: 1.3652  data: 0.0328  batch: 0.2347  eta: 2:34:01
+2024-11-27 06:43:21,719 - lanedet.utils.recorder - INFO - epoch: 21  step: 9988  lr: 0.0003  loss: 1.5716  cls_loss: 0.0201  reg_loss: 1.3703  data: 0.0348  batch: 0.2171  eta: 2:33:42
+2024-11-27 06:44:24,284 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9421942932456907, "order": "desc"}, {"name": "FP", "value": 0.06977594057033265, "order": "asc"}, {"name": "FN", "value": 0.03936017253774257, "order": "asc"}]
+2024-11-27 06:44:24,285 - lanedet.utils.recorder - INFO - 0.9421942932456907
+2024-11-27 06:44:24,285 - lanedet.utils.recorder - INFO - Best metric: 0.9464948991818102
+2024-11-27 06:44:27,335 - lanedet.utils.recorder - INFO - epoch: 22  step: 9989  lr: 0.0003  loss: 1.5470  cls_loss: 0.0206  reg_loss: 1.3405  data: 0.1697  batch: 0.3554  eta: 2:33:51
+2024-11-27 06:44:50,891 - lanedet.utils.recorder - INFO - epoch: 22  step: 10089  lr: 0.0003  loss: 1.5399  cls_loss: 0.0204  reg_loss: 1.3364  data: 0.0333  batch: 0.2321  eta: 2:33:15
+2024-11-27 06:45:14,536 - lanedet.utils.recorder - INFO - epoch: 22  step: 10189  lr: 0.0003  loss: 1.4697  cls_loss: 0.0199  reg_loss: 1.2702  data: 0.0336  batch: 0.2355  eta: 2:32:41
+2024-11-27 06:45:38,373 - lanedet.utils.recorder - INFO - epoch: 22  step: 10289  lr: 0.0003  loss: 1.6863  cls_loss: 0.0279  reg_loss: 1.4069  data: 0.0324  batch: 0.2359  eta: 2:32:06
+2024-11-27 06:46:02,178 - lanedet.utils.recorder - INFO - epoch: 22  step: 10389  lr: 0.0003  loss: 1.5638  cls_loss: 0.0229  reg_loss: 1.3349  data: 0.0328  batch: 0.2364  eta: 2:31:32
+2024-11-27 06:46:14,320 - lanedet.utils.recorder - INFO - epoch: 22  step: 10442  lr: 0.0003  loss: 9.8361  cls_loss: 0.0319  reg_loss: 9.5173  data: 0.0345  batch: 0.2216  eta: 2:31:13
+2024-11-27 06:47:16,845 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9402087398582707, "order": "desc"}, {"name": "FP", "value": 0.0825185717709076, "order": "asc"}, {"name": "FN", "value": 0.04379343398034977, "order": "asc"}]
+2024-11-27 06:47:16,846 - lanedet.utils.recorder - INFO - 0.9402087398582707
+2024-11-27 06:47:16,846 - lanedet.utils.recorder - INFO - Best metric: 0.9464948991818102
+2024-11-27 06:47:20,159 - lanedet.utils.recorder - INFO - epoch: 23  step: 10443  lr: 0.0003  loss: 9.8365  cls_loss: 0.0312  reg_loss: 9.5247  data: 0.1835  batch: 0.3729  eta: 2:31:23
+2024-11-27 06:47:44,089 - lanedet.utils.recorder - INFO - epoch: 23  step: 10543  lr: 0.0003  loss: 1.5315  cls_loss: 0.0198  reg_loss: 1.3338  data: 0.0333  batch: 0.2346  eta: 2:30:49
+2024-11-27 06:48:07,816 - lanedet.utils.recorder - INFO - epoch: 23  step: 10643  lr: 0.0003  loss: 1.5937  cls_loss: 0.0244  reg_loss: 1.3495  data: 0.0320  batch: 0.2358  eta: 2:30:15
+2024-11-27 06:48:31,481 - lanedet.utils.recorder - INFO - epoch: 23  step: 10743  lr: 0.0003  loss: 1.4581  cls_loss: 0.0169  reg_loss: 1.2892  data: 0.0335  batch: 0.2340  eta: 2:29:42
+2024-11-27 06:48:54,939 - lanedet.utils.recorder - INFO - epoch: 23  step: 10843  lr: 0.0003  loss: 3.1339  cls_loss: 0.0269  reg_loss: 2.8651  data: 0.0342  batch: 0.2328  eta: 2:29:07
+2024-11-27 06:49:06,990 - lanedet.utils.recorder - INFO - epoch: 23  step: 10896  lr: 0.0003  loss: 1.5324  cls_loss: 0.0250  reg_loss: 1.2819  data: 0.0344  batch: 0.2179  eta: 2:28:48
+2024-11-27 06:50:09,464 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9443242699667903, "order": "desc"}, {"name": "FP", "value": 0.0624850227653962, "order": "asc"}, {"name": "FN", "value": 0.041397076443805324, "order": "asc"}]
+2024-11-27 06:50:09,464 - lanedet.utils.recorder - INFO - 0.9443242699667903
+2024-11-27 06:50:09,465 - lanedet.utils.recorder - INFO - Best metric: 0.9464948991818102
+2024-11-27 06:50:12,715 - lanedet.utils.recorder - INFO - epoch: 24  step: 10897  lr: 0.0003  loss: 1.5258  cls_loss: 0.0253  reg_loss: 1.2731  data: 0.1779  batch: 0.3657  eta: 2:28:57
+2024-11-27 06:50:36,377 - lanedet.utils.recorder - INFO - epoch: 24  step: 10997  lr: 0.0003  loss: 1.5200  cls_loss: 0.0173  reg_loss: 1.3466  data: 0.0336  batch: 0.2325  eta: 2:28:23
+2024-11-27 06:50:59,949 - lanedet.utils.recorder - INFO - epoch: 24  step: 11097  lr: 0.0003  loss: 1.5310  cls_loss: 0.0200  reg_loss: 1.3315  data: 0.0334  batch: 0.2360  eta: 2:27:50
+2024-11-27 06:51:23,440 - lanedet.utils.recorder - INFO - epoch: 24  step: 11197  lr: 0.0003  loss: 1.5309  cls_loss: 0.0219  reg_loss: 1.3119  data: 0.0323  batch: 0.2344  eta: 2:27:16
+2024-11-27 06:51:47,260 - lanedet.utils.recorder - INFO - epoch: 24  step: 11297  lr: 0.0003  loss: 1.5192  cls_loss: 0.0208  reg_loss: 1.3117  data: 0.0326  batch: 0.2370  eta: 2:26:44
+2024-11-27 06:51:59,388 - lanedet.utils.recorder - INFO - epoch: 24  step: 11350  lr: 0.0003  loss: 1.5460  cls_loss: 0.0215  reg_loss: 1.3306  data: 0.0339  batch: 0.2184  eta: 2:26:25
+2024-11-27 06:53:02,084 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9475507942213506, "order": "desc"}, {"name": "FP", "value": 0.06826623532230958, "order": "asc"}, {"name": "FN", "value": 0.033459142104001895, "order": "asc"}]
+2024-11-27 06:53:02,085 - lanedet.utils.recorder - INFO - 0.9475507942213506
+2024-11-27 06:53:14,557 - lanedet.utils.recorder - INFO - Best metric: 0.9475507942213506
+2024-11-27 06:53:17,759 - lanedet.utils.recorder - INFO - epoch: 25  step: 11351  lr: 0.0003  loss: 1.5373  cls_loss: 0.0207  reg_loss: 1.3301  data: 0.1746  batch: 0.3621  eta: 2:26:33
+2024-11-27 06:53:41,501 - lanedet.utils.recorder - INFO - epoch: 25  step: 11451  lr: 0.0003  loss: 1.3379  cls_loss: 0.0176  reg_loss: 1.1618  data: 0.0323  batch: 0.2347  eta: 2:26:01
+2024-11-27 06:54:04,872 - lanedet.utils.recorder - INFO - epoch: 25  step: 11551  lr: 0.0003  loss: 1.4765  cls_loss: 0.0177  reg_loss: 1.2993  data: 0.0330  batch: 0.2337  eta: 2:25:27
+2024-11-27 06:54:28,222 - lanedet.utils.recorder - INFO - epoch: 25  step: 11651  lr: 0.0003  loss: 1.5470  cls_loss: 0.0262  reg_loss: 1.2854  data: 0.0337  batch: 0.2300  eta: 2:24:54
+2024-11-27 06:54:51,753 - lanedet.utils.recorder - INFO - epoch: 25  step: 11751  lr: 0.0003  loss: 1.5961  cls_loss: 0.0233  reg_loss: 1.3626  data: 0.0326  batch: 0.2379  eta: 2:24:21
+2024-11-27 06:55:03,747 - lanedet.utils.recorder - INFO - epoch: 25  step: 11804  lr: 0.0003  loss: 2.6619  cls_loss: 0.0310  reg_loss: 2.3518  data: 0.0329  batch: 0.2189  eta: 2:24:03
+2024-11-27 06:56:06,632 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9498829636095947, "order": "desc"}, {"name": "FP", "value": 0.08611909896956567, "order": "asc"}, {"name": "FN", "value": 0.03202132758207524, "order": "asc"}]
+2024-11-27 06:56:06,633 - lanedet.utils.recorder - INFO - 0.9498829636095947
+2024-11-27 06:56:19,107 - lanedet.utils.recorder - INFO - Best metric: 0.9498829636095947
+2024-11-27 06:56:22,037 - lanedet.utils.recorder - INFO - epoch: 26  step: 11805  lr: 0.0003  loss: 2.6774  cls_loss: 0.0318  reg_loss: 2.3590  data: 0.1615  batch: 0.3505  eta: 2:24:10
+2024-11-27 06:56:45,538 - lanedet.utils.recorder - INFO - epoch: 26  step: 11905  lr: 0.0003  loss: 1.5425  cls_loss: 0.0198  reg_loss: 1.3447  data: 0.0331  batch: 0.2384  eta: 2:23:37
+2024-11-27 06:57:08,937 - lanedet.utils.recorder - INFO - epoch: 26  step: 12005  lr: 0.0003  loss: 1.4512  cls_loss: 0.0168  reg_loss: 1.2831  data: 0.0328  batch: 0.2392  eta: 2:23:04
+2024-11-27 06:57:32,468 - lanedet.utils.recorder - INFO - epoch: 26  step: 12105  lr: 0.0002  loss: 1.6056  cls_loss: 0.0209  reg_loss: 1.3965  data: 0.0323  batch: 0.2273  eta: 2:22:32
+2024-11-27 06:57:55,884 - lanedet.utils.recorder - INFO - epoch: 26  step: 12205  lr: 0.0002  loss: 1.4169  cls_loss: 0.0221  reg_loss: 1.1958  data: 0.0345  batch: 0.2400  eta: 2:22:00
+2024-11-27 06:58:07,952 - lanedet.utils.recorder - INFO - epoch: 26  step: 12258  lr: 0.0002  loss: 1.4867  cls_loss: 0.0263  reg_loss: 1.2235  data: 0.0344  batch: 0.2213  eta: 2:21:42
+2024-11-27 06:59:10,418 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9419225634178838, "order": "desc"}, {"name": "FP", "value": 0.06700215672178245, "order": "asc"}, {"name": "FN", "value": 0.04157680325904618, "order": "asc"}]
+2024-11-27 06:59:10,419 - lanedet.utils.recorder - INFO - 0.9419225634178838
+2024-11-27 06:59:10,420 - lanedet.utils.recorder - INFO - Best metric: 0.9498829636095947
+2024-11-27 06:59:13,617 - lanedet.utils.recorder - INFO - epoch: 27  step: 12259  lr: 0.0002  loss: 1.5178  cls_loss: 0.0275  reg_loss: 1.2426  data: 0.1752  batch: 0.3658  eta: 2:21:49
+2024-11-27 06:59:37,195 - lanedet.utils.recorder - INFO - epoch: 27  step: 12359  lr: 0.0002  loss: 1.5722  cls_loss: 0.0290  reg_loss: 1.2817  data: 0.0320  batch: 0.2366  eta: 2:21:17
+2024-11-27 07:00:00,516 - lanedet.utils.recorder - INFO - epoch: 27  step: 12459  lr: 0.0002  loss: 1.5961  cls_loss: 0.0271  reg_loss: 1.3250  data: 0.0333  batch: 0.2364  eta: 2:20:45
+2024-11-27 07:00:23,894 - lanedet.utils.recorder - INFO - epoch: 27  step: 12559  lr: 0.0002  loss: 1.4582  cls_loss: 0.0179  reg_loss: 1.2790  data: 0.0341  batch: 0.2386  eta: 2:20:13
+2024-11-27 07:00:47,533 - lanedet.utils.recorder - INFO - epoch: 27  step: 12659  lr: 0.0002  loss: 1.4900  cls_loss: 0.0188  reg_loss: 1.3020  data: 0.0323  batch: 0.2462  eta: 2:19:42
+2024-11-27 07:00:59,362 - lanedet.utils.recorder - INFO - epoch: 27  step: 12712  lr: 0.0002  loss: 1.6013  cls_loss: 0.0278  reg_loss: 1.3229  data: 0.0340  batch: 0.2150  eta: 2:19:23
+2024-11-27 07:02:01,980 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9506018708705578, "order": "desc"}, {"name": "FP", "value": 0.07772585669781874, "order": "asc"}, {"name": "FN", "value": 0.02980469686077164, "order": "asc"}]
+2024-11-27 07:02:01,981 - lanedet.utils.recorder - INFO - 0.9506018708705578
+2024-11-27 07:02:14,439 - lanedet.utils.recorder - INFO - Best metric: 0.9506018708705578
+2024-11-27 07:02:17,312 - lanedet.utils.recorder - INFO - epoch: 28  step: 12713  lr: 0.0002  loss: 1.6048  cls_loss: 0.0260  reg_loss: 1.3449  data: 0.1585  batch: 0.3423  eta: 2:19:29
+2024-11-27 07:02:40,645 - lanedet.utils.recorder - INFO - epoch: 28  step: 12813  lr: 0.0002  loss: 1.3939  cls_loss: 0.0155  reg_loss: 1.2388  data: 0.0328  batch: 0.2410  eta: 2:18:58
+2024-11-27 07:03:04,111 - lanedet.utils.recorder - INFO - epoch: 28  step: 12913  lr: 0.0002  loss: 1.4189  cls_loss: 0.0152  reg_loss: 1.2670  data: 0.0330  batch: 0.2375  eta: 2:18:26
+2024-11-27 07:03:27,586 - lanedet.utils.recorder - INFO - epoch: 28  step: 13013  lr: 0.0002  loss: 1.4310  cls_loss: 0.0162  reg_loss: 1.2686  data: 0.0337  batch: 0.2317  eta: 2:17:55
+2024-11-27 07:03:50,814 - lanedet.utils.recorder - INFO - epoch: 28  step: 13113  lr: 0.0002  loss: 1.5807  cls_loss: 0.0265  reg_loss: 1.3153  data: 0.0325  batch: 0.2309  eta: 2:17:23
+2024-11-27 07:04:03,081 - lanedet.utils.recorder - INFO - epoch: 28  step: 13166  lr: 0.0002  loss: 2.5343  cls_loss: 0.0218  reg_loss: 2.3161  data: 0.0324  batch: 0.2262  eta: 2:17:06
+2024-11-27 07:05:05,612 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9460108135633777, "order": "desc"}, {"name": "FP", "value": 0.04639348190750075, "order": "asc"}, {"name": "FN", "value": 0.0400790797987059, "order": "asc"}]
+2024-11-27 07:05:05,613 - lanedet.utils.recorder - INFO - 0.9460108135633777
+2024-11-27 07:05:05,614 - lanedet.utils.recorder - INFO - Best metric: 0.9506018708705578
+2024-11-27 07:05:08,452 - lanedet.utils.recorder - INFO - epoch: 29  step: 13167  lr: 0.0002  loss: 2.5244  cls_loss: 0.0202  reg_loss: 2.3220  data: 0.1585  batch: 0.3530  eta: 2:17:12
+2024-11-27 07:05:32,299 - lanedet.utils.recorder - INFO - epoch: 29  step: 13267  lr: 0.0002  loss: 1.4913  cls_loss: 0.0189  reg_loss: 1.3021  data: 0.0328  batch: 0.2368  eta: 2:16:42
+2024-11-27 07:05:55,756 - lanedet.utils.recorder - INFO - epoch: 29  step: 13367  lr: 0.0002  loss: 8.4880  cls_loss: 0.0281  reg_loss: 8.2067  data: 0.0326  batch: 0.2298  eta: 2:16:11
+2024-11-27 07:06:19,220 - lanedet.utils.recorder - INFO - epoch: 29  step: 13467  lr: 0.0002  loss: 1.3415  cls_loss: 0.0134  reg_loss: 1.2074  data: 0.0324  batch: 0.2385  eta: 2:15:40
+2024-11-27 07:06:42,660 - lanedet.utils.recorder - INFO - epoch: 29  step: 13567  lr: 0.0002  loss: 1.5506  cls_loss: 0.0182  reg_loss: 1.3689  data: 0.0337  batch: 0.2296  eta: 2:15:09
+2024-11-27 07:06:54,748 - lanedet.utils.recorder - INFO - epoch: 29  step: 13620  lr: 0.0002  loss: 1.3940  cls_loss: 0.0157  reg_loss: 1.2369  data: 0.0355  batch: 0.2235  eta: 2:14:52
+2024-11-27 07:07:57,821 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9520305920714731, "order": "desc"}, {"name": "FP", "value": 0.0778816199376941, "order": "asc"}, {"name": "FN", "value": 0.03262041696621135, "order": "asc"}]
+2024-11-27 07:07:57,822 - lanedet.utils.recorder - INFO - 0.9520305920714731
+2024-11-27 07:08:10,262 - lanedet.utils.recorder - INFO - Best metric: 0.9520305920714731
+2024-11-27 07:08:13,495 - lanedet.utils.recorder - INFO - epoch: 30  step: 13621  lr: 0.0002  loss: 1.3888  cls_loss: 0.0154  reg_loss: 1.2346  data: 0.1793  batch: 0.3691  eta: 2:14:59
+2024-11-27 07:08:37,362 - lanedet.utils.recorder - INFO - epoch: 30  step: 13721  lr: 0.0002  loss: 1.5459  cls_loss: 0.0279  reg_loss: 1.2672  data: 0.0314  batch: 0.2427  eta: 2:14:29
+2024-11-27 07:09:00,950 - lanedet.utils.recorder - INFO - epoch: 30  step: 13821  lr: 0.0002  loss: 1.5367  cls_loss: 0.0180  reg_loss: 1.3567  data: 0.0338  batch: 0.2349  eta: 2:13:59
+2024-11-27 07:09:24,488 - lanedet.utils.recorder - INFO - epoch: 30  step: 13921  lr: 0.0002  loss: 1.4512  cls_loss: 0.0174  reg_loss: 1.2774  data: 0.0329  batch: 0.2318  eta: 2:13:28
+2024-11-27 07:09:48,229 - lanedet.utils.recorder - INFO - epoch: 30  step: 14021  lr: 0.0002  loss: 1.4941  cls_loss: 0.0214  reg_loss: 1.2798  data: 0.0321  batch: 0.2395  eta: 2:12:59
+2024-11-27 07:10:00,290 - lanedet.utils.recorder - INFO - epoch: 30  step: 14074  lr: 0.0002  loss: 1.4700  cls_loss: 0.0216  reg_loss: 1.2544  data: 0.0340  batch: 0.2172  eta: 2:12:42
+2024-11-27 07:11:03,055 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9513400345760091, "order": "desc"}, {"name": "FP", "value": 0.07924754373352447, "order": "asc"}, {"name": "FN", "value": 0.026449796309609433, "order": "asc"}]
+2024-11-27 07:11:03,056 - lanedet.utils.recorder - INFO - 0.9513400345760091
+2024-11-27 07:11:03,057 - lanedet.utils.recorder - INFO - Best metric: 0.9520305920714731
+2024-11-27 07:11:06,187 - lanedet.utils.recorder - INFO - epoch: 31  step: 14075  lr: 0.0002  loss: 1.5199  cls_loss: 0.0248  reg_loss: 1.2716  data: 0.1719  batch: 0.3597  eta: 2:12:48
+2024-11-27 07:11:29,741 - lanedet.utils.recorder - INFO - epoch: 31  step: 14175  lr: 0.0002  loss: 1.5218  cls_loss: 0.0321  reg_loss: 1.2007  data: 0.0322  batch: 0.2378  eta: 2:12:18
+2024-11-27 07:11:53,157 - lanedet.utils.recorder - INFO - epoch: 31  step: 14275  lr: 0.0002  loss: 13.3505  cls_loss: 0.0200  reg_loss: 13.1502  data: 0.0343  batch: 0.2337  eta: 2:11:47
+2024-11-27 07:12:16,589 - lanedet.utils.recorder - INFO - epoch: 31  step: 14375  lr: 0.0002  loss: 1.9373  cls_loss: 0.0204  reg_loss: 1.7337  data: 0.0328  batch: 0.2343  eta: 2:11:17
+2024-11-27 07:12:40,385 - lanedet.utils.recorder - INFO - epoch: 31  step: 14475  lr: 0.0002  loss: 1.4830  cls_loss: 0.0211  reg_loss: 1.2720  data: 0.0321  batch: 0.2413  eta: 2:10:48
+2024-11-27 07:12:52,416 - lanedet.utils.recorder - INFO - epoch: 31  step: 14528  lr: 0.0002  loss: 1.4260  cls_loss: 0.0175  reg_loss: 1.2511  data: 0.0347  batch: 0.2149  eta: 2:10:31
+2024-11-27 07:13:54,905 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9502488360549042, "order": "desc"}, {"name": "FP", "value": 0.043050563144021246, "order": "asc"}, {"name": "FN", "value": 0.035855499640546316, "order": "asc"}]
+2024-11-27 07:13:54,906 - lanedet.utils.recorder - INFO - 0.9502488360549042
+2024-11-27 07:13:54,906 - lanedet.utils.recorder - INFO - Best metric: 0.9520305920714731
+2024-11-27 07:13:57,993 - lanedet.utils.recorder - INFO - epoch: 32  step: 14529  lr: 0.0002  loss: 1.4336  cls_loss: 0.0187  reg_loss: 1.2470  data: 0.1729  batch: 0.3550  eta: 2:10:37
+2024-11-27 07:14:21,162 - lanedet.utils.recorder - INFO - epoch: 32  step: 14629  lr: 0.0002  loss: 1.4424  cls_loss: 0.0182  reg_loss: 1.2608  data: 0.0334  batch: 0.2284  eta: 2:10:06
+2024-11-27 07:14:44,601 - lanedet.utils.recorder - INFO - epoch: 32  step: 14729  lr: 0.0002  loss: 2.5441  cls_loss: 0.0261  reg_loss: 2.2832  data: 0.0334  batch: 0.2353  eta: 2:09:36
+2024-11-27 07:15:07,875 - lanedet.utils.recorder - INFO - epoch: 32  step: 14829  lr: 0.0002  loss: 1.3176  cls_loss: 0.0128  reg_loss: 1.1892  data: 0.0341  batch: 0.2281  eta: 2:09:06
+2024-11-27 07:15:31,316 - lanedet.utils.recorder - INFO - epoch: 32  step: 14929  lr: 0.0002  loss: 1.5205  cls_loss: 0.0234  reg_loss: 1.2865  data: 0.0335  batch: 0.2316  eta: 2:08:37
+2024-11-27 07:15:43,306 - lanedet.utils.recorder - INFO - epoch: 32  step: 14982  lr: 0.0002  loss: 1.7584  cls_loss: 0.0256  reg_loss: 1.5022  data: 0.0348  batch: 0.2203  eta: 2:08:20
+2024-11-27 07:16:45,619 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9494946253123766, "order": "desc"}, {"name": "FP", "value": 0.06837407141145412, "order": "asc"}, {"name": "FN", "value": 0.03196141864366162, "order": "asc"}]
+2024-11-27 07:16:45,620 - lanedet.utils.recorder - INFO - 0.9494946253123766
+2024-11-27 07:16:45,620 - lanedet.utils.recorder - INFO - Best metric: 0.9520305920714731
+2024-11-27 07:16:48,774 - lanedet.utils.recorder - INFO - epoch: 33  step: 14983  lr: 0.0002  loss: 1.7752  cls_loss: 0.0263  reg_loss: 1.5125  data: 0.1765  batch: 0.3627  eta: 2:08:25
+2024-11-27 07:17:12,175 - lanedet.utils.recorder - INFO - epoch: 33  step: 15083  lr: 0.0002  loss: 1.3602  cls_loss: 0.0157  reg_loss: 1.2029  data: 0.0317  batch: 0.2319  eta: 2:07:56
+2024-11-27 07:17:35,373 - lanedet.utils.recorder - INFO - epoch: 33  step: 15183  lr: 0.0002  loss: 1.3852  cls_loss: 0.0172  reg_loss: 1.2134  data: 0.0338  batch: 0.2337  eta: 2:07:26
+2024-11-27 07:17:59,016 - lanedet.utils.recorder - INFO - epoch: 33  step: 15283  lr: 0.0002  loss: 4.1596  cls_loss: 0.0207  reg_loss: 3.9531  data: 0.0335  batch: 0.2387  eta: 2:06:57
+2024-11-27 07:18:22,518 - lanedet.utils.recorder - INFO - epoch: 33  step: 15383  lr: 0.0002  loss: 1.4380  cls_loss: 0.0240  reg_loss: 1.1981  data: 0.0333  batch: 0.2306  eta: 2:06:27
+2024-11-27 07:18:34,579 - lanedet.utils.recorder - INFO - epoch: 33  step: 15436  lr: 0.0002  loss: 2.3124  cls_loss: 0.0185  reg_loss: 2.1276  data: 0.0361  batch: 0.2146  eta: 2:06:11
+2024-11-27 07:19:37,244 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9416609967135608, "order": "desc"}, {"name": "FP", "value": 0.061981787682721896, "order": "asc"}, {"name": "FN", "value": 0.04133716750539176, "order": "asc"}]
+2024-11-27 07:19:37,244 - lanedet.utils.recorder - INFO - 0.9416609967135608
+2024-11-27 07:19:37,245 - lanedet.utils.recorder - INFO - Best metric: 0.9520305920714731
+2024-11-27 07:19:40,317 - lanedet.utils.recorder - INFO - epoch: 34  step: 15437  lr: 0.0002  loss: 2.3034  cls_loss: 0.0191  reg_loss: 2.1122  data: 0.1729  batch: 0.3526  eta: 2:06:16
+2024-11-27 07:20:03,910 - lanedet.utils.recorder - INFO - epoch: 34  step: 15537  lr: 0.0002  loss: 1.3910  cls_loss: 0.0149  reg_loss: 1.2416  data: 0.0332  batch: 0.2374  eta: 2:05:47
+2024-11-27 07:20:27,241 - lanedet.utils.recorder - INFO - epoch: 34  step: 15637  lr: 0.0002  loss: 1.4169  cls_loss: 0.0207  reg_loss: 1.2098  data: 0.0317  batch: 0.2333  eta: 2:05:18
+2024-11-27 07:20:51,002 - lanedet.utils.recorder - INFO - epoch: 34  step: 15737  lr: 0.0002  loss: 1.3866  cls_loss: 0.0176  reg_loss: 1.2106  data: 0.0326  batch: 0.2361  eta: 2:04:49
+2024-11-27 07:21:14,701 - lanedet.utils.recorder - INFO - epoch: 34  step: 15837  lr: 0.0002  loss: 1.3603  cls_loss: 0.0142  reg_loss: 1.2187  data: 0.0329  batch: 0.2313  eta: 2:04:21
+2024-11-27 07:21:26,765 - lanedet.utils.recorder - INFO - epoch: 34  step: 15890  lr: 0.0002  loss: 1.4544  cls_loss: 0.0229  reg_loss: 1.2253  data: 0.0342  batch: 0.2172  eta: 2:04:05
+2024-11-27 07:22:29,720 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9470335447262967, "order": "desc"}, {"name": "FP", "value": 0.059052240594296354, "order": "asc"}, {"name": "FN", "value": 0.03669422477833688, "order": "asc"}]
+2024-11-27 07:22:29,721 - lanedet.utils.recorder - INFO - 0.9470335447262967
+2024-11-27 07:22:29,722 - lanedet.utils.recorder - INFO - Best metric: 0.9520305920714731
+2024-11-27 07:22:32,830 - lanedet.utils.recorder - INFO - epoch: 35  step: 15891  lr: 0.0002  loss: 1.4012  cls_loss: 0.0204  reg_loss: 1.1975  data: 0.1715  batch: 0.3584  eta: 2:04:09
+2024-11-27 07:22:56,191 - lanedet.utils.recorder - INFO - epoch: 35  step: 15991  lr: 0.0002  loss: 1.6929  cls_loss: 0.0200  reg_loss: 1.4931  data: 0.0333  batch: 0.2316  eta: 2:03:40
+2024-11-27 07:23:19,798 - lanedet.utils.recorder - INFO - epoch: 35  step: 16091  lr: 0.0002  loss: 1.3383  cls_loss: 0.0135  reg_loss: 1.2034  data: 0.0326  batch: 0.2371  eta: 2:03:12
+2024-11-27 07:23:43,440 - lanedet.utils.recorder - INFO - epoch: 35  step: 16191  lr: 0.0002  loss: 2.9860  cls_loss: 0.0151  reg_loss: 2.8354  data: 0.0325  batch: 0.2403  eta: 2:02:43
+2024-11-27 07:24:07,143 - lanedet.utils.recorder - INFO - epoch: 35  step: 16291  lr: 0.0002  loss: 1.3590  cls_loss: 0.0141  reg_loss: 1.2183  data: 0.0336  batch: 0.2392  eta: 2:02:15
+2024-11-27 07:24:19,440 - lanedet.utils.recorder - INFO - epoch: 35  step: 16344  lr: 0.0002  loss: 1.3634  cls_loss: 0.0195  reg_loss: 1.1679  data: 0.0318  batch: 0.2248  eta: 2:01:59
+2024-11-27 07:25:21,966 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9439370014720464, "order": "desc"}, {"name": "FP", "value": 0.04483584950874688, "order": "asc"}, {"name": "FN", "value": 0.039120536784088146, "order": "asc"}]
+2024-11-27 07:25:21,967 - lanedet.utils.recorder - INFO - 0.9439370014720464
+2024-11-27 07:25:21,967 - lanedet.utils.recorder - INFO - Best metric: 0.9520305920714731
+2024-11-27 07:25:24,748 - lanedet.utils.recorder - INFO - epoch: 36  step: 16345  lr: 0.0002  loss: 1.3805  cls_loss: 0.0203  reg_loss: 1.1773  data: 0.1547  batch: 0.3491  eta: 2:02:03
+2024-11-27 07:25:48,206 - lanedet.utils.recorder - INFO - epoch: 36  step: 16445  lr: 0.0002  loss: 1.3380  cls_loss: 0.0117  reg_loss: 1.2212  data: 0.0328  batch: 0.2336  eta: 2:01:35
+2024-11-27 07:26:11,678 - lanedet.utils.recorder - INFO - epoch: 36  step: 16545  lr: 0.0002  loss: 1.3770  cls_loss: 0.0183  reg_loss: 1.1935  data: 0.0345  batch: 0.2371  eta: 2:01:06
+2024-11-27 07:26:35,182 - lanedet.utils.recorder - INFO - epoch: 36  step: 16645  lr: 0.0002  loss: 1.4893  cls_loss: 0.0295  reg_loss: 1.1945  data: 0.0319  batch: 0.2299  eta: 2:00:37
+2024-11-27 07:26:58,403 - lanedet.utils.recorder - INFO - epoch: 36  step: 16745  lr: 0.0002  loss: 1.4336  cls_loss: 0.0243  reg_loss: 1.1910  data: 0.0334  batch: 0.2317  eta: 2:00:08
+2024-11-27 07:27:10,642 - lanedet.utils.recorder - INFO - epoch: 36  step: 16798  lr: 0.0002  loss: 1.3661  cls_loss: 0.0126  reg_loss: 1.2406  data: 0.0326  batch: 0.2228  eta: 1:59:53
+2024-11-27 07:28:13,307 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9535780613467468, "order": "desc"}, {"name": "FP", "value": 0.05443326144260703, "order": "asc"}, {"name": "FN", "value": 0.025670980110232486, "order": "asc"}]
+2024-11-27 07:28:13,308 - lanedet.utils.recorder - INFO - 0.9535780613467468
+2024-11-27 07:28:25,749 - lanedet.utils.recorder - INFO - Best metric: 0.9535780613467468
+2024-11-27 07:28:29,039 - lanedet.utils.recorder - INFO - epoch: 37  step: 16799  lr: 0.0002  loss: 1.3615  cls_loss: 0.0127  reg_loss: 1.2349  data: 0.1804  batch: 0.3713  eta: 1:59:58
+2024-11-27 07:28:52,729 - lanedet.utils.recorder - INFO - epoch: 37  step: 16899  lr: 0.0002  loss: 1.3750  cls_loss: 0.0170  reg_loss: 1.2047  data: 0.0325  batch: 0.2370  eta: 1:59:30
+2024-11-27 07:29:16,203 - lanedet.utils.recorder - INFO - epoch: 37  step: 16999  lr: 0.0002  loss: 1.3856  cls_loss: 0.0157  reg_loss: 1.2288  data: 0.0340  batch: 0.2345  eta: 1:59:01
+2024-11-27 07:29:39,592 - lanedet.utils.recorder - INFO - epoch: 37  step: 17099  lr: 0.0002  loss: 1.4279  cls_loss: 0.0193  reg_loss: 1.2347  data: 0.0325  batch: 0.2323  eta: 1:58:33
+2024-11-27 07:30:02,920 - lanedet.utils.recorder - INFO - epoch: 37  step: 17199  lr: 0.0002  loss: 1.3587  cls_loss: 0.0181  reg_loss: 1.1780  data: 0.0332  batch: 0.2374  eta: 1:58:04
+2024-11-27 07:30:15,110 - lanedet.utils.recorder - INFO - epoch: 37  step: 17252  lr: 0.0002  loss: 1.3597  cls_loss: 0.0225  reg_loss: 1.1351  data: 0.0334  batch: 0.2190  eta: 1:57:49
+2024-11-27 07:31:17,405 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9494662755468765, "order": "desc"}, {"name": "FP", "value": 0.05081476156242508, "order": "asc"}, {"name": "FN", "value": 0.03381859573448355, "order": "asc"}]
+2024-11-27 07:31:17,405 - lanedet.utils.recorder - INFO - 0.9494662755468765
+2024-11-27 07:31:17,406 - lanedet.utils.recorder - INFO - Best metric: 0.9535780613467468
+2024-11-27 07:31:20,533 - lanedet.utils.recorder - INFO - epoch: 38  step: 17253  lr: 0.0002  loss: 1.3353  cls_loss: 0.0210  reg_loss: 1.1248  data: 0.1735  batch: 0.3604  eta: 1:57:53
+2024-11-27 07:31:44,392 - lanedet.utils.recorder - INFO - epoch: 38  step: 17353  lr: 0.0002  loss: 1.3078  cls_loss: 0.0165  reg_loss: 1.1426  data: 0.0326  batch: 0.2344  eta: 1:57:26
+2024-11-27 07:32:07,714 - lanedet.utils.recorder - INFO - epoch: 38  step: 17453  lr: 0.0002  loss: 9.7683  cls_loss: 0.0276  reg_loss: 9.4924  data: 0.0322  batch: 0.2357  eta: 1:56:57
+2024-11-27 07:32:31,410 - lanedet.utils.recorder - INFO - epoch: 38  step: 17553  lr: 0.0002  loss: 1.3152  cls_loss: 0.0129  reg_loss: 1.1863  data: 0.0324  batch: 0.2395  eta: 1:56:29
+2024-11-27 07:32:55,190 - lanedet.utils.recorder - INFO - epoch: 38  step: 17653  lr: 0.0002  loss: 1.4298  cls_loss: 0.0190  reg_loss: 1.2402  data: 0.0333  batch: 0.2380  eta: 1:56:02
+2024-11-27 07:33:07,499 - lanedet.utils.recorder - INFO - epoch: 38  step: 17706  lr: 0.0002  loss: 1.3902  cls_loss: 0.0186  reg_loss: 1.2044  data: 0.0325  batch: 0.2241  eta: 1:55:47
+2024-11-27 07:34:09,895 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9502049741535654, "order": "desc"}, {"name": "FP", "value": 0.056140666187394925, "order": "asc"}, {"name": "FN", "value": 0.03172178289000719, "order": "asc"}]
+2024-11-27 07:34:09,896 - lanedet.utils.recorder - INFO - 0.9502049741535654
+2024-11-27 07:34:09,897 - lanedet.utils.recorder - INFO - Best metric: 0.9535780613467468
+2024-11-27 07:34:13,016 - lanedet.utils.recorder - INFO - epoch: 39  step: 17707  lr: 0.0002  loss: 1.3484  cls_loss: 0.0159  reg_loss: 1.1899  data: 0.1718  batch: 0.3655  eta: 1:55:51
+2024-11-27 07:34:36,621 - lanedet.utils.recorder - INFO - epoch: 39  step: 17807  lr: 0.0002  loss: 1.4078  cls_loss: 0.0200  reg_loss: 1.2074  data: 0.0323  batch: 0.2310  eta: 1:55:23
+2024-11-27 07:35:00,197 - lanedet.utils.recorder - INFO - epoch: 39  step: 17907  lr: 0.0002  loss: 1.3687  cls_loss: 0.0180  reg_loss: 1.1888  data: 0.0345  batch: 0.2329  eta: 1:54:55
+2024-11-27 07:35:23,748 - lanedet.utils.recorder - INFO - epoch: 39  step: 18007  lr: 0.0002  loss: 1.2822  cls_loss: 0.0122  reg_loss: 1.1597  data: 0.0321  batch: 0.2337  eta: 1:54:27
+2024-11-27 07:35:46,952 - lanedet.utils.recorder - INFO - epoch: 39  step: 18107  lr: 0.0002  loss: 1.3206  cls_loss: 0.0138  reg_loss: 1.1830  data: 0.0327  batch: 0.2317  eta: 1:53:59
+2024-11-27 07:35:58,979 - lanedet.utils.recorder - INFO - epoch: 39  step: 18160  lr: 0.0002  loss: 1.4058  cls_loss: 0.0155  reg_loss: 1.2512  data: 0.0338  batch: 0.2189  eta: 1:53:43
+2024-11-27 07:37:01,331 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9479316439012627, "order": "desc"}, {"name": "FP", "value": 0.06273064941289203, "order": "asc"}, {"name": "FN", "value": 0.03453750299544688, "order": "asc"}]
+2024-11-27 07:37:01,332 - lanedet.utils.recorder - INFO - 0.9479316439012627
+2024-11-27 07:37:01,332 - lanedet.utils.recorder - INFO - Best metric: 0.9535780613467468
+2024-11-27 07:37:04,600 - lanedet.utils.recorder - INFO - epoch: 40  step: 18161  lr: 0.0002  loss: 1.3864  cls_loss: 0.0137  reg_loss: 1.2494  data: 0.1808  batch: 0.3670  eta: 1:53:48
+2024-11-27 07:37:28,178 - lanedet.utils.recorder - INFO - epoch: 40  step: 18261  lr: 0.0002  loss: 1.2692  cls_loss: 0.0132  reg_loss: 1.1371  data: 0.0333  batch: 0.2326  eta: 1:53:20
+2024-11-27 07:37:51,717 - lanedet.utils.recorder - INFO - epoch: 40  step: 18361  lr: 0.0002  loss: 1.3476  cls_loss: 0.0183  reg_loss: 1.1643  data: 0.0329  batch: 0.2379  eta: 1:52:52
+2024-11-27 07:38:15,161 - lanedet.utils.recorder - INFO - epoch: 40  step: 18461  lr: 0.0002  loss: 1.2297  cls_loss: 0.0089  reg_loss: 1.1412  data: 0.0332  batch: 0.2352  eta: 1:52:24
+2024-11-27 07:38:38,911 - lanedet.utils.recorder - INFO - epoch: 40  step: 18561  lr: 0.0002  loss: 1.3617  cls_loss: 0.0182  reg_loss: 1.1793  data: 0.0337  batch: 0.2414  eta: 1:51:57
+2024-11-27 07:38:51,181 - lanedet.utils.recorder - INFO - epoch: 40  step: 18614  lr: 0.0002  loss: 1.3473  cls_loss: 0.0157  reg_loss: 1.1908  data: 0.0343  batch: 0.2182  eta: 1:51:42
+2024-11-27 07:39:53,490 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9536936000136862, "order": "desc"}, {"name": "FP", "value": 0.0588066139468004, "order": "asc"}, {"name": "FN", "value": 0.0274083393242272, "order": "asc"}]
+2024-11-27 07:39:53,491 - lanedet.utils.recorder - INFO - 0.9536936000136862
+2024-11-27 07:40:05,938 - lanedet.utils.recorder - INFO - Best metric: 0.9536936000136862
+2024-11-27 07:40:08,782 - lanedet.utils.recorder - INFO - epoch: 41  step: 18615  lr: 0.0002  loss: 1.3641  cls_loss: 0.0155  reg_loss: 1.2095  data: 0.1584  batch: 0.3451  eta: 1:51:45
+2024-11-27 07:40:32,594 - lanedet.utils.recorder - INFO - epoch: 41  step: 18715  lr: 0.0002  loss: 8.7281  cls_loss: 0.0151  reg_loss: 8.5769  data: 0.0321  batch: 0.2368  eta: 1:51:18
+2024-11-27 07:40:56,083 - lanedet.utils.recorder - INFO - epoch: 41  step: 18815  lr: 0.0002  loss: 1.3239  cls_loss: 0.0120  reg_loss: 1.2043  data: 0.0326  batch: 0.2364  eta: 1:50:50
+2024-11-27 07:41:19,866 - lanedet.utils.recorder - INFO - epoch: 41  step: 18915  lr: 0.0002  loss: 1.3787  cls_loss: 0.0183  reg_loss: 1.1959  data: 0.0338  batch: 0.2350  eta: 1:50:23
+2024-11-27 07:41:43,281 - lanedet.utils.recorder - INFO - epoch: 41  step: 19015  lr: 0.0002  loss: 1.2697  cls_loss: 0.0128  reg_loss: 1.1417  data: 0.0335  batch: 0.2307  eta: 1:49:56
+2024-11-27 07:41:55,461 - lanedet.utils.recorder - INFO - epoch: 41  step: 19068  lr: 0.0002  loss: 1.1983  cls_loss: 0.0091  reg_loss: 1.1073  data: 0.0317  batch: 0.2194  eta: 1:49:41
+2024-11-27 07:42:57,824 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9492020343363781, "order": "desc"}, {"name": "FP", "value": 0.04976635514018691, "order": "asc"}, {"name": "FN", "value": 0.03411814042655162, "order": "asc"}]
+2024-11-27 07:42:57,824 - lanedet.utils.recorder - INFO - 0.9492020343363781
+2024-11-27 07:42:57,825 - lanedet.utils.recorder - INFO - Best metric: 0.9536936000136862
+2024-11-27 07:43:01,154 - lanedet.utils.recorder - INFO - epoch: 42  step: 19069  lr: 0.0002  loss: 1.2009  cls_loss: 0.0090  reg_loss: 1.1113  data: 0.1826  batch: 0.3715  eta: 1:49:45
+2024-11-27 07:43:25,014 - lanedet.utils.recorder - INFO - epoch: 42  step: 19169  lr: 0.0002  loss: 1.2423  cls_loss: 0.0083  reg_loss: 1.1590  data: 0.0332  batch: 0.2369  eta: 1:49:18
+2024-11-27 07:43:48,577 - lanedet.utils.recorder - INFO - epoch: 42  step: 19269  lr: 0.0002  loss: 1.6182  cls_loss: 0.0353  reg_loss: 1.2650  data: 0.0332  batch: 0.2343  eta: 1:48:50
+2024-11-27 07:44:11,810 - lanedet.utils.recorder - INFO - epoch: 42  step: 19369  lr: 0.0002  loss: 1.2889  cls_loss: 0.0141  reg_loss: 1.1474  data: 0.0330  batch: 0.2317  eta: 1:48:22
+2024-11-27 07:44:35,445 - lanedet.utils.recorder - INFO - epoch: 42  step: 19469  lr: 0.0002  loss: 1.3763  cls_loss: 0.0097  reg_loss: 1.2790  data: 0.0342  batch: 0.2340  eta: 1:47:55
+2024-11-27 07:44:47,739 - lanedet.utils.recorder - INFO - epoch: 42  step: 19522  lr: 0.0002  loss: 2.1997  cls_loss: 0.0172  reg_loss: 2.0275  data: 0.0334  batch: 0.2235  eta: 1:47:40
+2024-11-27 07:45:50,589 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.954279316866928, "order": "desc"}, {"name": "FP", "value": 0.05687754612988224, "order": "asc"}, {"name": "FN", "value": 0.028995926192187892, "order": "asc"}]
+2024-11-27 07:45:50,590 - lanedet.utils.recorder - INFO - 0.954279316866928
+2024-11-27 07:46:03,054 - lanedet.utils.recorder - INFO - Best metric: 0.954279316866928
+2024-11-27 07:46:05,743 - lanedet.utils.recorder - INFO - epoch: 43  step: 19523  lr: 0.0002  loss: 2.1945  cls_loss: 0.0169  reg_loss: 2.0252  data: 0.1518  batch: 0.3425  eta: 1:47:43
+2024-11-27 07:46:29,544 - lanedet.utils.recorder - INFO - epoch: 43  step: 19623  lr: 0.0002  loss: 1.3171  cls_loss: 0.0159  reg_loss: 1.1584  data: 0.0327  batch: 0.2337  eta: 1:47:16
+2024-11-27 07:46:53,258 - lanedet.utils.recorder - INFO - epoch: 43  step: 19723  lr: 0.0002  loss: 1.3880  cls_loss: 0.0199  reg_loss: 1.1889  data: 0.0342  batch: 0.2454  eta: 1:46:49
+2024-11-27 07:47:16,977 - lanedet.utils.recorder - INFO - epoch: 43  step: 19823  lr: 0.0002  loss: 1.2829  cls_loss: 0.0149  reg_loss: 1.1335  data: 0.0330  batch: 0.2329  eta: 1:46:22
+2024-11-27 07:47:40,409 - lanedet.utils.recorder - INFO - epoch: 43  step: 19923  lr: 0.0002  loss: 8.0482  cls_loss: 0.0170  reg_loss: 7.8783  data: 0.0332  batch: 0.2360  eta: 1:45:55
+2024-11-27 07:47:52,673 - lanedet.utils.recorder - INFO - epoch: 43  step: 19976  lr: 0.0002  loss: 1.4247  cls_loss: 0.0247  reg_loss: 1.1774  data: 0.0348  batch: 0.2155  eta: 1:45:40
+2024-11-27 07:48:55,064 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9537016235322266, "order": "desc"}, {"name": "FP", "value": 0.05422358015815943, "order": "asc"}, {"name": "FN", "value": 0.031092739036664267, "order": "asc"}]
+2024-11-27 07:48:55,065 - lanedet.utils.recorder - INFO - 0.9537016235322266
+2024-11-27 07:48:55,065 - lanedet.utils.recorder - INFO - Best metric: 0.954279316866928
+2024-11-27 07:48:58,184 - lanedet.utils.recorder - INFO - epoch: 44  step: 19977  lr: 0.0002  loss: 1.4309  cls_loss: 0.0251  reg_loss: 1.1798  data: 0.1735  batch: 0.3568  eta: 1:45:44
+2024-11-27 07:49:21,880 - lanedet.utils.recorder - INFO - epoch: 44  step: 20077  lr: 0.0002  loss: 1.2880  cls_loss: 0.0156  reg_loss: 1.1325  data: 0.0333  batch: 0.2355  eta: 1:45:17
+2024-11-27 07:49:45,189 - lanedet.utils.recorder - INFO - epoch: 44  step: 20177  lr: 0.0002  loss: 1.2621  cls_loss: 0.0118  reg_loss: 1.1437  data: 0.0312  batch: 0.2342  eta: 1:44:49
+2024-11-27 07:50:08,428 - lanedet.utils.recorder - INFO - epoch: 44  step: 20277  lr: 0.0002  loss: 1.2838  cls_loss: 0.0136  reg_loss: 1.1479  data: 0.0341  batch: 0.2323  eta: 1:44:22
+2024-11-27 07:50:31,986 - lanedet.utils.recorder - INFO - epoch: 44  step: 20377  lr: 0.0002  loss: 1.1712  cls_loss: 0.0100  reg_loss: 1.0713  data: 0.0332  batch: 0.2317  eta: 1:43:55
+2024-11-27 07:50:44,256 - lanedet.utils.recorder - INFO - epoch: 44  step: 20430  lr: 0.0002  loss: 1.2910  cls_loss: 0.0137  reg_loss: 1.1538  data: 0.0334  batch: 0.2251  eta: 1:43:40
+2024-11-27 07:51:46,626 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9549431293005971, "order": "desc"}, {"name": "FP", "value": 0.04853822190270798, "order": "asc"}, {"name": "FN", "value": 0.029654924514737602, "order": "asc"}]
+2024-11-27 07:51:46,627 - lanedet.utils.recorder - INFO - 0.9549431293005971
+2024-11-27 07:51:59,103 - lanedet.utils.recorder - INFO - Best metric: 0.9549431293005971
+2024-11-27 07:52:02,028 - lanedet.utils.recorder - INFO - epoch: 45  step: 20431  lr: 0.0002  loss: 1.2907  cls_loss: 0.0137  reg_loss: 1.1533  data: 0.1595  batch: 0.3533  eta: 1:43:43
+2024-11-27 07:52:25,430 - lanedet.utils.recorder - INFO - epoch: 45  step: 20531  lr: 0.0002  loss: 1.2719  cls_loss: 0.0139  reg_loss: 1.1327  data: 0.0335  batch: 0.2307  eta: 1:43:16
+2024-11-27 07:52:49,073 - lanedet.utils.recorder - INFO - epoch: 45  step: 20631  lr: 0.0002  loss: 1.2824  cls_loss: 0.0145  reg_loss: 1.1375  data: 0.0337  batch: 0.2381  eta: 1:42:49
+2024-11-27 07:53:12,420 - lanedet.utils.recorder - INFO - epoch: 45  step: 20731  lr: 0.0002  loss: 1.2017  cls_loss: 0.0101  reg_loss: 1.1010  data: 0.0341  batch: 0.2317  eta: 1:42:22
+2024-11-27 07:53:35,869 - lanedet.utils.recorder - INFO - epoch: 45  step: 20831  lr: 0.0002  loss: 1.2850  cls_loss: 0.0120  reg_loss: 1.1649  data: 0.0322  batch: 0.2361  eta: 1:41:55
+2024-11-27 07:53:47,971 - lanedet.utils.recorder - INFO - epoch: 45  step: 20884  lr: 0.0002  loss: 1.2348  cls_loss: 0.0107  reg_loss: 1.1279  data: 0.0312  batch: 0.2204  eta: 1:41:40
+2024-11-27 07:54:50,604 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.94942722775666, "order": "desc"}, {"name": "FP", "value": 0.04631560028756312, "order": "asc"}, {"name": "FN", "value": 0.03375868679606998, "order": "asc"}]
+2024-11-27 07:54:50,605 - lanedet.utils.recorder - INFO - 0.94942722775666
+2024-11-27 07:54:50,606 - lanedet.utils.recorder - INFO - Best metric: 0.9549431293005971
+2024-11-27 07:54:53,758 - lanedet.utils.recorder - INFO - epoch: 46  step: 20885  lr: 0.0002  loss: 1.2479  cls_loss: 0.0126  reg_loss: 1.1214  data: 0.1722  batch: 0.3632  eta: 1:41:43
+2024-11-27 07:55:17,114 - lanedet.utils.recorder - INFO - epoch: 46  step: 20985  lr: 0.0002  loss: 1.2798  cls_loss: 0.0153  reg_loss: 1.1272  data: 0.0329  batch: 0.2316  eta: 1:41:16
+2024-11-27 07:55:40,702 - lanedet.utils.recorder - INFO - epoch: 46  step: 21085  lr: 0.0002  loss: 1.2473  cls_loss: 0.0128  reg_loss: 1.1197  data: 0.0337  batch: 0.2408  eta: 1:40:49
+2024-11-27 07:56:04,509 - lanedet.utils.recorder - INFO - epoch: 46  step: 21185  lr: 0.0002  loss: 4.0472  cls_loss: 0.0137  reg_loss: 3.9104  data: 0.0338  batch: 0.2390  eta: 1:40:23
+2024-11-27 07:56:28,079 - lanedet.utils.recorder - INFO - epoch: 46  step: 21285  lr: 0.0002  loss: 1.3088  cls_loss: 0.0155  reg_loss: 1.1541  data: 0.0333  batch: 0.2350  eta: 1:39:56
+2024-11-27 07:56:40,154 - lanedet.utils.recorder - INFO - epoch: 46  step: 21338  lr: 0.0002  loss: 1.2480  cls_loss: 0.0152  reg_loss: 1.0962  data: 0.0326  batch: 0.2211  eta: 1:39:41
+2024-11-27 07:57:42,571 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.952352602615448, "order": "desc"}, {"name": "FP", "value": 0.05191708602923553, "order": "asc"}, {"name": "FN", "value": 0.030463695183321357, "order": "asc"}]
+2024-11-27 07:57:42,571 - lanedet.utils.recorder - INFO - 0.952352602615448
+2024-11-27 07:57:42,572 - lanedet.utils.recorder - INFO - Best metric: 0.9549431293005971
+2024-11-27 07:57:45,674 - lanedet.utils.recorder - INFO - epoch: 47  step: 21339  lr: 0.0002  loss: 1.2473  cls_loss: 0.0155  reg_loss: 1.0919  data: 0.1711  batch: 0.3623  eta: 1:39:44
+2024-11-27 07:58:09,302 - lanedet.utils.recorder - INFO - epoch: 47  step: 21439  lr: 0.0002  loss: 1.2795  cls_loss: 0.0112  reg_loss: 1.1675  data: 0.0330  batch: 0.2371  eta: 1:39:17
+2024-11-27 07:58:32,720 - lanedet.utils.recorder - INFO - epoch: 47  step: 21539  lr: 0.0002  loss: 1.2758  cls_loss: 0.0127  reg_loss: 1.1491  data: 0.0317  batch: 0.2355  eta: 1:38:51
+2024-11-27 07:58:56,364 - lanedet.utils.recorder - INFO - epoch: 47  step: 21639  lr: 0.0002  loss: 1.2175  cls_loss: 0.0093  reg_loss: 1.1248  data: 0.0325  batch: 0.2363  eta: 1:38:24
+2024-11-27 07:59:20,150 - lanedet.utils.recorder - INFO - epoch: 47  step: 21739  lr: 0.0002  loss: 1.2770  cls_loss: 0.0143  reg_loss: 1.1336  data: 0.0326  batch: 0.2395  eta: 1:37:57
+2024-11-27 07:59:32,122 - lanedet.utils.recorder - INFO - epoch: 47  step: 21792  lr: 0.0002  loss: 14.3571  cls_loss: 0.0187  reg_loss: 14.1698  data: 0.0357  batch: 0.2212  eta: 1:37:43
+2024-11-27 08:00:34,518 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.955517078326652, "order": "desc"}, {"name": "FP", "value": 0.05941169422477807, "order": "asc"}, {"name": "FN", "value": 0.02656961418643666, "order": "asc"}]
+2024-11-27 08:00:34,518 - lanedet.utils.recorder - INFO - 0.955517078326652
+2024-11-27 08:00:46,983 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:00:50,017 - lanedet.utils.recorder - INFO - epoch: 48  step: 21793  lr: 0.0002  loss: 14.3704  cls_loss: 0.0199  reg_loss: 14.1712  data: 0.1698  batch: 0.3573  eta: 1:37:45
+2024-11-27 08:01:13,666 - lanedet.utils.recorder - INFO - epoch: 48  step: 21893  lr: 0.0002  loss: 1.2579  cls_loss: 0.0113  reg_loss: 1.1449  data: 0.0341  batch: 0.2315  eta: 1:37:19
+2024-11-27 08:01:37,290 - lanedet.utils.recorder - INFO - epoch: 48  step: 21993  lr: 0.0002  loss: 1.1923  cls_loss: 0.0108  reg_loss: 1.0841  data: 0.0317  batch: 0.2344  eta: 1:36:52
+2024-11-27 08:02:00,842 - lanedet.utils.recorder - INFO - epoch: 48  step: 22093  lr: 0.0002  loss: 1.1966  cls_loss: 0.0110  reg_loss: 1.0867  data: 0.0321  batch: 0.2368  eta: 1:36:26
+2024-11-27 08:02:24,850 - lanedet.utils.recorder - INFO - epoch: 48  step: 22193  lr: 0.0002  loss: 1.1322  cls_loss: 0.0120  reg_loss: 1.0124  data: 0.0332  batch: 0.2386  eta: 1:36:00
+2024-11-27 08:02:36,901 - lanedet.utils.recorder - INFO - epoch: 48  step: 22246  lr: 0.0002  loss: 1.3111  cls_loss: 0.0166  reg_loss: 1.1447  data: 0.0319  batch: 0.2185  eta: 1:35:45
+2024-11-27 08:03:39,506 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9493903195713872, "order": "desc"}, {"name": "FP", "value": 0.035472082434699424, "order": "asc"}, {"name": "FN", "value": 0.039450035945362956, "order": "asc"}]
+2024-11-27 08:03:39,507 - lanedet.utils.recorder - INFO - 0.9493903195713872
+2024-11-27 08:03:39,508 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:03:42,554 - lanedet.utils.recorder - INFO - epoch: 49  step: 22247  lr: 0.0002  loss: 1.2996  cls_loss: 0.0161  reg_loss: 1.1384  data: 0.1674  batch: 0.3560  eta: 1:35:48
+2024-11-27 08:04:06,142 - lanedet.utils.recorder - INFO - epoch: 49  step: 22347  lr: 0.0002  loss: 1.2860  cls_loss: 0.0134  reg_loss: 1.1522  data: 0.0325  batch: 0.2349  eta: 1:35:21
+2024-11-27 08:04:29,258 - lanedet.utils.recorder - INFO - epoch: 49  step: 22447  lr: 0.0002  loss: 1.1706  cls_loss: 0.0126  reg_loss: 1.0447  data: 0.0344  batch: 0.2335  eta: 1:34:54
+2024-11-27 08:04:53,054 - lanedet.utils.recorder - INFO - epoch: 49  step: 22547  lr: 0.0002  loss: 1.1879  cls_loss: 0.0132  reg_loss: 1.0561  data: 0.0331  batch: 0.2358  eta: 1:34:28
+2024-11-27 08:05:16,307 - lanedet.utils.recorder - INFO - epoch: 49  step: 22647  lr: 0.0001  loss: 1.1930  cls_loss: 0.0092  reg_loss: 1.1014  data: 0.0346  batch: 0.2307  eta: 1:34:01
+2024-11-27 08:05:28,278 - lanedet.utils.recorder - INFO - epoch: 49  step: 22700  lr: 0.0001  loss: 1.1806  cls_loss: 0.0099  reg_loss: 1.0820  data: 0.0343  batch: 0.2137  eta: 1:33:47
+2024-11-27 08:06:30,867 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9519182628119481, "order": "desc"}, {"name": "FP", "value": 0.05297148334531508, "order": "asc"}, {"name": "FN", "value": 0.031601965013179974, "order": "asc"}]
+2024-11-27 08:06:30,867 - lanedet.utils.recorder - INFO - 0.9519182628119481
+2024-11-27 08:06:30,868 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:06:33,909 - lanedet.utils.recorder - INFO - epoch: 50  step: 22701  lr: 0.0001  loss: 1.1823  cls_loss: 0.0099  reg_loss: 1.0830  data: 0.1711  batch: 0.3511  eta: 1:33:49
+2024-11-27 08:06:57,319 - lanedet.utils.recorder - INFO - epoch: 50  step: 22801  lr: 0.0001  loss: 1.2852  cls_loss: 0.0166  reg_loss: 1.1193  data: 0.0329  batch: 0.2365  eta: 1:33:22
+2024-11-27 08:07:21,019 - lanedet.utils.recorder - INFO - epoch: 50  step: 22901  lr: 0.0001  loss: 1.1664  cls_loss: 0.0099  reg_loss: 1.0676  data: 0.0336  batch: 0.2355  eta: 1:32:56
+2024-11-27 08:07:44,288 - lanedet.utils.recorder - INFO - epoch: 50  step: 23001  lr: 0.0001  loss: 3.1523  cls_loss: 0.0153  reg_loss: 2.9994  data: 0.0330  batch: 0.2364  eta: 1:32:29
+2024-11-27 08:08:07,740 - lanedet.utils.recorder - INFO - epoch: 50  step: 23101  lr: 0.0001  loss: 1.1625  cls_loss: 0.0089  reg_loss: 1.0735  data: 0.0326  batch: 0.2343  eta: 1:32:03
+2024-11-27 08:08:19,634 - lanedet.utils.recorder - INFO - epoch: 50  step: 23154  lr: 0.0001  loss: 1.2242  cls_loss: 0.0143  reg_loss: 1.0810  data: 0.0325  batch: 0.2171  eta: 1:31:48
+2024-11-27 08:09:22,305 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9545617447194498, "order": "desc"}, {"name": "FP", "value": 0.04305655403786265, "order": "asc"}, {"name": "FN", "value": 0.031781691828420805, "order": "asc"}]
+2024-11-27 08:09:22,306 - lanedet.utils.recorder - INFO - 0.9545617447194498
+2024-11-27 08:09:22,306 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:09:25,729 - lanedet.utils.recorder - INFO - epoch: 51  step: 23155  lr: 0.0001  loss: 1.2106  cls_loss: 0.0140  reg_loss: 1.0703  data: 0.1870  batch: 0.3734  eta: 1:31:51
+2024-11-27 08:09:49,170 - lanedet.utils.recorder - INFO - epoch: 51  step: 23255  lr: 0.0001  loss: 1.1891  cls_loss: 0.0145  reg_loss: 1.0440  data: 0.0334  batch: 0.2330  eta: 1:31:25
+2024-11-27 08:10:12,704 - lanedet.utils.recorder - INFO - epoch: 51  step: 23355  lr: 0.0001  loss: 1.1204  cls_loss: 0.0074  reg_loss: 1.0461  data: 0.0326  batch: 0.2355  eta: 1:30:58
+2024-11-27 08:10:36,222 - lanedet.utils.recorder - INFO - epoch: 51  step: 23455  lr: 0.0001  loss: 1.1731  cls_loss: 0.0114  reg_loss: 1.0592  data: 0.0328  batch: 0.2356  eta: 1:30:32
+2024-11-27 08:10:59,832 - lanedet.utils.recorder - INFO - epoch: 51  step: 23555  lr: 0.0001  loss: 1.2216  cls_loss: 0.0090  reg_loss: 1.1316  data: 0.0339  batch: 0.2341  eta: 1:30:06
+2024-11-27 08:11:11,911 - lanedet.utils.recorder - INFO - epoch: 51  step: 23608  lr: 0.0001  loss: 1.3163  cls_loss: 0.0152  reg_loss: 1.1642  data: 0.0327  batch: 0.2216  eta: 1:29:51
+2024-11-27 08:12:14,474 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9531891881482947, "order": "desc"}, {"name": "FP", "value": 0.04626168224299086, "order": "asc"}, {"name": "FN", "value": 0.030673376467768985, "order": "asc"}]
+2024-11-27 08:12:14,475 - lanedet.utils.recorder - INFO - 0.9531891881482947
+2024-11-27 08:12:14,475 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:12:17,333 - lanedet.utils.recorder - INFO - epoch: 52  step: 23609  lr: 0.0001  loss: 1.3558  cls_loss: 0.0171  reg_loss: 1.1850  data: 0.1587  batch: 0.3499  eta: 1:29:53
+2024-11-27 08:12:41,086 - lanedet.utils.recorder - INFO - epoch: 52  step: 23709  lr: 0.0001  loss: 1.4658  cls_loss: 0.0126  reg_loss: 1.3399  data: 0.0323  batch: 0.2360  eta: 1:29:27
+2024-11-27 08:13:04,744 - lanedet.utils.recorder - INFO - epoch: 52  step: 23809  lr: 0.0001  loss: 1.2855  cls_loss: 0.0188  reg_loss: 1.0978  data: 0.0324  batch: 0.2403  eta: 1:29:01
+2024-11-27 08:13:28,286 - lanedet.utils.recorder - INFO - epoch: 52  step: 23909  lr: 0.0001  loss: 1.1534  cls_loss: 0.0091  reg_loss: 1.0626  data: 0.0330  batch: 0.2316  eta: 1:28:35
+2024-11-27 08:13:51,750 - lanedet.utils.recorder - INFO - epoch: 52  step: 24009  lr: 0.0001  loss: 1.2455  cls_loss: 0.0090  reg_loss: 1.1558  data: 0.0328  batch: 0.2376  eta: 1:28:09
+2024-11-27 08:14:03,767 - lanedet.utils.recorder - INFO - epoch: 52  step: 24062  lr: 0.0001  loss: 1.2598  cls_loss: 0.0118  reg_loss: 1.1420  data: 0.0333  batch: 0.2161  eta: 1:27:54
+2024-11-27 08:15:06,144 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9500354104618074, "order": "desc"}, {"name": "FP", "value": 0.04566858375269611, "order": "asc"}, {"name": "FN", "value": 0.033908459142104, "order": "asc"}]
+2024-11-27 08:15:06,145 - lanedet.utils.recorder - INFO - 0.9500354104618074
+2024-11-27 08:15:06,146 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:15:09,320 - lanedet.utils.recorder - INFO - epoch: 53  step: 24063  lr: 0.0001  loss: 1.2671  cls_loss: 0.0119  reg_loss: 1.1477  data: 0.1744  batch: 0.3601  eta: 1:27:57
+2024-11-27 08:15:33,192 - lanedet.utils.recorder - INFO - epoch: 53  step: 24163  lr: 0.0001  loss: 1.1824  cls_loss: 0.0145  reg_loss: 1.0373  data: 0.0327  batch: 0.2417  eta: 1:27:31
+2024-11-27 08:15:56,671 - lanedet.utils.recorder - INFO - epoch: 53  step: 24263  lr: 0.0001  loss: 1.1948  cls_loss: 0.0112  reg_loss: 1.0832  data: 0.0329  batch: 0.2350  eta: 1:27:05
+2024-11-27 08:16:20,444 - lanedet.utils.recorder - INFO - epoch: 53  step: 24363  lr: 0.0001  loss: 1.1784  cls_loss: 0.0110  reg_loss: 1.0686  data: 0.0323  batch: 0.2377  eta: 1:26:39
+2024-11-27 08:16:43,855 - lanedet.utils.recorder - INFO - epoch: 53  step: 24463  lr: 0.0001  loss: 1.1261  cls_loss: 0.0091  reg_loss: 1.0349  data: 0.0331  batch: 0.2367  eta: 1:26:12
+2024-11-27 08:16:55,892 - lanedet.utils.recorder - INFO - epoch: 53  step: 24516  lr: 0.0001  loss: 1.1174  cls_loss: 0.0081  reg_loss: 1.0362  data: 0.0339  batch: 0.2164  eta: 1:25:58
+2024-11-27 08:17:58,366 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9554213310054362, "order": "desc"}, {"name": "FP", "value": 0.042032111190989874, "order": "asc"}, {"name": "FN", "value": 0.030883057752216638, "order": "asc"}]
+2024-11-27 08:17:58,367 - lanedet.utils.recorder - INFO - 0.9554213310054362
+2024-11-27 08:17:58,367 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:18:01,413 - lanedet.utils.recorder - INFO - epoch: 54  step: 24517  lr: 0.0001  loss: 1.1118  cls_loss: 0.0079  reg_loss: 1.0329  data: 0.1674  batch: 0.3543  eta: 1:26:00
+2024-11-27 08:18:24,938 - lanedet.utils.recorder - INFO - epoch: 54  step: 24617  lr: 0.0001  loss: 1.1861  cls_loss: 0.0096  reg_loss: 1.0897  data: 0.0326  batch: 0.2314  eta: 1:25:34
+2024-11-27 08:18:48,259 - lanedet.utils.recorder - INFO - epoch: 54  step: 24717  lr: 0.0001  loss: 1.1394  cls_loss: 0.0147  reg_loss: 0.9921  data: 0.0339  batch: 0.2298  eta: 1:25:08
+2024-11-27 08:19:11,751 - lanedet.utils.recorder - INFO - epoch: 54  step: 24817  lr: 0.0001  loss: 1.1386  cls_loss: 0.0109  reg_loss: 1.0296  data: 0.0333  batch: 0.2348  eta: 1:24:42
+2024-11-27 08:19:35,180 - lanedet.utils.recorder - INFO - epoch: 54  step: 24917  lr: 0.0001  loss: 1.1622  cls_loss: 0.0106  reg_loss: 1.0561  data: 0.0335  batch: 0.2405  eta: 1:24:15
+2024-11-27 08:19:47,169 - lanedet.utils.recorder - INFO - epoch: 54  step: 24970  lr: 0.0001  loss: 1.0429  cls_loss: 0.0051  reg_loss: 0.9915  data: 0.0336  batch: 0.2160  eta: 1:24:01
+2024-11-27 08:20:49,609 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9538963275820699, "order": "desc"}, {"name": "FP", "value": 0.04858015815959755, "order": "asc"}, {"name": "FN", "value": 0.028756290438533456, "order": "asc"}]
+2024-11-27 08:20:49,610 - lanedet.utils.recorder - INFO - 0.9538963275820699
+2024-11-27 08:20:49,610 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:20:52,517 - lanedet.utils.recorder - INFO - epoch: 55  step: 24971  lr: 0.0001  loss: 1.0435  cls_loss: 0.0051  reg_loss: 0.9926  data: 0.1607  batch: 0.3465  eta: 1:24:03
+2024-11-27 08:21:15,695 - lanedet.utils.recorder - INFO - epoch: 55  step: 25071  lr: 0.0001  loss: 1.0389  cls_loss: 0.0060  reg_loss: 0.9793  data: 0.0328  batch: 0.2350  eta: 1:23:37
+2024-11-27 08:21:39,319 - lanedet.utils.recorder - INFO - epoch: 55  step: 25171  lr: 0.0001  loss: 1.1260  cls_loss: 0.0098  reg_loss: 1.0282  data: 0.0339  batch: 0.2408  eta: 1:23:11
+2024-11-27 08:22:03,110 - lanedet.utils.recorder - INFO - epoch: 55  step: 25271  lr: 0.0001  loss: 1.1600  cls_loss: 0.0096  reg_loss: 1.0639  data: 0.0331  batch: 0.2376  eta: 1:22:45
+2024-11-27 08:22:26,424 - lanedet.utils.recorder - INFO - epoch: 55  step: 25371  lr: 0.0001  loss: 1.1604  cls_loss: 0.0135  reg_loss: 1.0259  data: 0.0334  batch: 0.2437  eta: 1:22:19
+2024-11-27 08:22:38,576 - lanedet.utils.recorder - INFO - epoch: 55  step: 25424  lr: 0.0001  loss: 1.1320  cls_loss: 0.0070  reg_loss: 1.0618  data: 0.0328  batch: 0.2192  eta: 1:22:05
+2024-11-27 08:23:41,035 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.955117507103479, "order": "desc"}, {"name": "FP", "value": 0.049460819554277564, "order": "asc"}, {"name": "FN", "value": 0.02995446920680567, "order": "asc"}]
+2024-11-27 08:23:41,036 - lanedet.utils.recorder - INFO - 0.955117507103479
+2024-11-27 08:23:41,036 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:23:44,308 - lanedet.utils.recorder - INFO - epoch: 56  step: 25425  lr: 0.0001  loss: 1.1233  cls_loss: 0.0065  reg_loss: 1.0586  data: 0.1736  batch: 0.3683  eta: 1:22:07
+2024-11-27 08:24:07,592 - lanedet.utils.recorder - INFO - epoch: 56  step: 25525  lr: 0.0001  loss: 1.0990  cls_loss: 0.0094  reg_loss: 1.0053  data: 0.0327  batch: 0.2312  eta: 1:21:41
+2024-11-27 08:24:30,800 - lanedet.utils.recorder - INFO - epoch: 56  step: 25625  lr: 0.0001  loss: 1.1551  cls_loss: 0.0089  reg_loss: 1.0664  data: 0.0333  batch: 0.2343  eta: 1:21:14
+2024-11-27 08:24:54,320 - lanedet.utils.recorder - INFO - epoch: 56  step: 25725  lr: 0.0001  loss: 1.0909  cls_loss: 0.0088  reg_loss: 1.0027  data: 0.0336  batch: 0.2272  eta: 1:20:49
+2024-11-27 08:25:17,662 - lanedet.utils.recorder - INFO - epoch: 56  step: 25825  lr: 0.0001  loss: 1.1475  cls_loss: 0.0107  reg_loss: 1.0408  data: 0.0330  batch: 0.2297  eta: 1:20:22
+2024-11-27 08:25:29,690 - lanedet.utils.recorder - INFO - epoch: 56  step: 25878  lr: 0.0001  loss: 2.3452  cls_loss: 0.0139  reg_loss: 2.2059  data: 0.0352  batch: 0.2178  eta: 1:20:08
+2024-11-27 08:26:31,927 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9509559754886787, "order": "desc"}, {"name": "FP", "value": 0.04732806134675314, "order": "asc"}, {"name": "FN", "value": 0.03274023484303858, "order": "asc"}]
+2024-11-27 08:26:31,928 - lanedet.utils.recorder - INFO - 0.9509559754886787
+2024-11-27 08:26:31,928 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:26:35,014 - lanedet.utils.recorder - INFO - epoch: 57  step: 25879  lr: 0.0001  loss: 2.3286  cls_loss: 0.0135  reg_loss: 2.1935  data: 0.1733  batch: 0.3575  eta: 1:20:10
+2024-11-27 08:26:58,661 - lanedet.utils.recorder - INFO - epoch: 57  step: 25979  lr: 0.0001  loss: 1.1628  cls_loss: 0.0078  reg_loss: 1.0848  data: 0.0328  batch: 0.2339  eta: 1:19:44
+2024-11-27 08:27:21,777 - lanedet.utils.recorder - INFO - epoch: 57  step: 26079  lr: 0.0001  loss: 1.1440  cls_loss: 0.0077  reg_loss: 1.0666  data: 0.0325  batch: 0.2282  eta: 1:19:18
+2024-11-27 08:27:45,133 - lanedet.utils.recorder - INFO - epoch: 57  step: 26179  lr: 0.0001  loss: 5.0627  cls_loss: 0.0187  reg_loss: 4.8759  data: 0.0329  batch: 0.2314  eta: 1:18:52
+2024-11-27 08:28:08,681 - lanedet.utils.recorder - INFO - epoch: 57  step: 26279  lr: 0.0001  loss: 1.1148  cls_loss: 0.0098  reg_loss: 1.0164  data: 0.0325  batch: 0.2343  eta: 1:18:26
+2024-11-27 08:28:20,687 - lanedet.utils.recorder - INFO - epoch: 57  step: 26332  lr: 0.0001  loss: 1.1739  cls_loss: 0.0119  reg_loss: 1.0551  data: 0.0339  batch: 0.2147  eta: 1:18:12
+2024-11-27 08:29:23,228 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9536288769641483, "order": "desc"}, {"name": "FP", "value": 0.04929307452671947, "order": "asc"}, {"name": "FN", "value": 0.031092739036664284, "order": "asc"}]
+2024-11-27 08:29:23,229 - lanedet.utils.recorder - INFO - 0.9536288769641483
+2024-11-27 08:29:23,229 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:29:26,266 - lanedet.utils.recorder - INFO - epoch: 58  step: 26333  lr: 0.0001  loss: 1.2157  cls_loss: 0.0164  reg_loss: 1.0520  data: 0.1675  batch: 0.3521  eta: 1:18:14
+2024-11-27 08:29:49,804 - lanedet.utils.recorder - INFO - epoch: 58  step: 26433  lr: 0.0001  loss: 1.2042  cls_loss: 0.0083  reg_loss: 1.1208  data: 0.0332  batch: 0.2287  eta: 1:17:48
+2024-11-27 08:30:12,956 - lanedet.utils.recorder - INFO - epoch: 58  step: 26533  lr: 0.0001  loss: 1.1919  cls_loss: 0.0143  reg_loss: 1.0484  data: 0.0332  batch: 0.2315  eta: 1:17:22
+2024-11-27 08:30:36,230 - lanedet.utils.recorder - INFO - epoch: 58  step: 26633  lr: 0.0001  loss: 1.1114  cls_loss: 0.0108  reg_loss: 1.0030  data: 0.0336  batch: 0.2296  eta: 1:16:56
+2024-11-27 08:30:59,553 - lanedet.utils.recorder - INFO - epoch: 58  step: 26733  lr: 0.0001  loss: 1.2205  cls_loss: 0.0128  reg_loss: 1.0926  data: 0.0325  batch: 0.2379  eta: 1:16:30
+2024-11-27 08:31:11,682 - lanedet.utils.recorder - INFO - epoch: 58  step: 26786  lr: 0.0001  loss: 1.0305  cls_loss: 0.0083  reg_loss: 0.9476  data: 0.0336  batch: 0.2177  eta: 1:16:16
+2024-11-27 08:32:13,971 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9554191914004908, "order": "desc"}, {"name": "FP", "value": 0.04482386772106419, "order": "asc"}, {"name": "FN", "value": 0.02800742870836332, "order": "asc"}]
+2024-11-27 08:32:13,972 - lanedet.utils.recorder - INFO - 0.9554191914004908
+2024-11-27 08:32:13,972 - lanedet.utils.recorder - INFO - Best metric: 0.955517078326652
+2024-11-27 08:32:17,046 - lanedet.utils.recorder - INFO - epoch: 59  step: 26787  lr: 0.0001  loss: 1.0475  cls_loss: 0.0085  reg_loss: 0.9630  data: 0.1715  batch: 0.3568  eta: 1:16:18
+2024-11-27 08:32:40,545 - lanedet.utils.recorder - INFO - epoch: 59  step: 26887  lr: 0.0001  loss: 1.1218  cls_loss: 0.0100  reg_loss: 1.0217  data: 0.0319  batch: 0.2308  eta: 1:15:52
+2024-11-27 08:33:03,848 - lanedet.utils.recorder - INFO - epoch: 59  step: 26987  lr: 0.0001  loss: 1.0762  cls_loss: 0.0100  reg_loss: 0.9764  data: 0.0333  batch: 0.2314  eta: 1:15:26
+2024-11-27 08:33:27,260 - lanedet.utils.recorder - INFO - epoch: 59  step: 27087  lr: 0.0001  loss: 1.1115  cls_loss: 0.0095  reg_loss: 1.0166  data: 0.0322  batch: 0.2370  eta: 1:15:00
+2024-11-27 08:33:50,605 - lanedet.utils.recorder - INFO - epoch: 59  step: 27187  lr: 0.0001  loss: 1.0673  cls_loss: 0.0078  reg_loss: 0.9892  data: 0.0332  batch: 0.2303  eta: 1:14:35
+2024-11-27 08:34:02,892 - lanedet.utils.recorder - INFO - epoch: 59  step: 27240  lr: 0.0001  loss: 7.8855  cls_loss: 0.0103  reg_loss: 7.7828  data: 0.0309  batch: 0.2252  eta: 1:14:21
+2024-11-27 08:35:05,282 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9555384743760841, "order": "desc"}, {"name": "FP", "value": 0.05059309849029477, "order": "asc"}, {"name": "FN", "value": 0.02767792954708844, "order": "asc"}]
+2024-11-27 08:35:05,283 - lanedet.utils.recorder - INFO - 0.9555384743760841
+2024-11-27 08:35:17,763 - lanedet.utils.recorder - INFO - Best metric: 0.9555384743760841
+2024-11-27 08:35:20,818 - lanedet.utils.recorder - INFO - epoch: 60  step: 27241  lr: 0.0001  loss: 7.8904  cls_loss: 0.0111  reg_loss: 7.7797  data: 0.1676  batch: 0.3625  eta: 1:14:22
+2024-11-27 08:35:44,392 - lanedet.utils.recorder - INFO - epoch: 60  step: 27341  lr: 0.0001  loss: 1.1203  cls_loss: 0.0108  reg_loss: 1.0127  data: 0.0333  batch: 0.2394  eta: 1:13:57
+2024-11-27 08:36:07,881 - lanedet.utils.recorder - INFO - epoch: 60  step: 27441  lr: 0.0001  loss: 1.2711  cls_loss: 0.0174  reg_loss: 1.0969  data: 0.0326  batch: 0.2381  eta: 1:13:31
+2024-11-27 08:36:31,375 - lanedet.utils.recorder - INFO - epoch: 60  step: 27541  lr: 0.0001  loss: 1.2178  cls_loss: 0.0158  reg_loss: 1.0602  data: 0.0330  batch: 0.2327  eta: 1:13:05
+2024-11-27 08:36:54,721 - lanedet.utils.recorder - INFO - epoch: 60  step: 27641  lr: 0.0001  loss: 1.1110  cls_loss: 0.0101  reg_loss: 1.0101  data: 0.0327  batch: 0.2330  eta: 1:12:40
+2024-11-27 08:37:06,744 - lanedet.utils.recorder - INFO - epoch: 60  step: 27694  lr: 0.0001  loss: 1.0405  cls_loss: 0.0065  reg_loss: 0.9756  data: 0.0349  batch: 0.2128  eta: 1:12:26
+2024-11-27 08:38:09,200 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9517059070213216, "order": "desc"}, {"name": "FP", "value": 0.03835969326623547, "order": "asc"}, {"name": "FN", "value": 0.035346273664030634, "order": "asc"}]
+2024-11-27 08:38:09,200 - lanedet.utils.recorder - INFO - 0.9517059070213216
+2024-11-27 08:38:09,201 - lanedet.utils.recorder - INFO - Best metric: 0.9555384743760841
+2024-11-27 08:38:12,371 - lanedet.utils.recorder - INFO - epoch: 61  step: 27695  lr: 0.0001  loss: 1.0371  cls_loss: 0.0065  reg_loss: 0.9724  data: 0.1737  batch: 0.3557  eta: 1:12:27
+2024-11-27 08:38:35,788 - lanedet.utils.recorder - INFO - epoch: 61  step: 27795  lr: 0.0001  loss: 13.0721  cls_loss: 0.0231  reg_loss: 12.8412  data: 0.0331  batch: 0.2318  eta: 1:12:01
+2024-11-27 08:38:59,135 - lanedet.utils.recorder - INFO - epoch: 61  step: 27895  lr: 0.0001  loss: 6.7918  cls_loss: 0.0129  reg_loss: 6.6627  data: 0.0337  batch: 0.2333  eta: 1:11:36
+2024-11-27 08:39:22,620 - lanedet.utils.recorder - INFO - epoch: 61  step: 27995  lr: 0.0001  loss: 1.1202  cls_loss: 0.0128  reg_loss: 0.9921  data: 0.0331  batch: 0.2350  eta: 1:11:10
+2024-11-27 08:39:45,977 - lanedet.utils.recorder - INFO - epoch: 61  step: 28095  lr: 0.0001  loss: 1.0261  cls_loss: 0.0063  reg_loss: 0.9628  data: 0.0336  batch: 0.2366  eta: 1:10:44
+2024-11-27 08:39:58,036 - lanedet.utils.recorder - INFO - epoch: 61  step: 28148  lr: 0.0001  loss: 1.0530  cls_loss: 0.0093  reg_loss: 0.9600  data: 0.0348  batch: 0.2172  eta: 1:10:31
+2024-11-27 08:41:00,649 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9524194652699268, "order": "desc"}, {"name": "FP", "value": 0.03880301941049621, "order": "asc"}, {"name": "FN", "value": 0.031512101605559555, "order": "asc"}]
+2024-11-27 08:41:00,650 - lanedet.utils.recorder - INFO - 0.9524194652699268
+2024-11-27 08:41:00,650 - lanedet.utils.recorder - INFO - Best metric: 0.9555384743760841
+2024-11-27 08:41:03,793 - lanedet.utils.recorder - INFO - epoch: 62  step: 28149  lr: 0.0001  loss: 1.0608  cls_loss: 0.0095  reg_loss: 0.9660  data: 0.1753  batch: 0.3604  eta: 1:10:32
+2024-11-27 08:41:27,536 - lanedet.utils.recorder - INFO - epoch: 62  step: 28249  lr: 0.0001  loss: 1.0118  cls_loss: 0.0059  reg_loss: 0.9529  data: 0.0326  batch: 0.2357  eta: 1:10:07
+2024-11-27 08:41:50,693 - lanedet.utils.recorder - INFO - epoch: 62  step: 28349  lr: 0.0001  loss: 1.0887  cls_loss: 0.0089  reg_loss: 0.9993  data: 0.0328  batch: 0.2346  eta: 1:09:41
+2024-11-27 08:42:14,102 - lanedet.utils.recorder - INFO - epoch: 62  step: 28449  lr: 0.0001  loss: 1.0699  cls_loss: 0.0104  reg_loss: 0.9661  data: 0.0343  batch: 0.2314  eta: 1:09:15
+2024-11-27 08:42:37,235 - lanedet.utils.recorder - INFO - epoch: 62  step: 28549  lr: 0.0001  loss: 1.0847  cls_loss: 0.0062  reg_loss: 1.0229  data: 0.0344  batch: 0.2320  eta: 1:08:49
+2024-11-27 08:42:49,302 - lanedet.utils.recorder - INFO - epoch: 62  step: 28602  lr: 0.0001  loss: 1.1633  cls_loss: 0.0084  reg_loss: 1.0791  data: 0.0316  batch: 0.2180  eta: 1:08:36
+2024-11-27 08:43:51,707 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9554122376844268, "order": "desc"}, {"name": "FP", "value": 0.042505391804457386, "order": "asc"}, {"name": "FN", "value": 0.03190150970524802, "order": "asc"}]
+2024-11-27 08:43:51,708 - lanedet.utils.recorder - INFO - 0.9554122376844268
+2024-11-27 08:43:51,708 - lanedet.utils.recorder - INFO - Best metric: 0.9555384743760841
+2024-11-27 08:43:54,808 - lanedet.utils.recorder - INFO - epoch: 63  step: 28603  lr: 0.0001  loss: 1.1612  cls_loss: 0.0083  reg_loss: 1.0780  data: 0.1700  batch: 0.3584  eta: 1:08:37
+2024-11-27 08:44:18,150 - lanedet.utils.recorder - INFO - epoch: 63  step: 28703  lr: 0.0001  loss: 1.0589  cls_loss: 0.0081  reg_loss: 0.9776  data: 0.0333  batch: 0.2359  eta: 1:08:11
+2024-11-27 08:44:41,493 - lanedet.utils.recorder - INFO - epoch: 63  step: 28803  lr: 0.0001  loss: 1.0881  cls_loss: 0.0077  reg_loss: 1.0108  data: 0.0330  batch: 0.2365  eta: 1:07:46
+2024-11-27 08:45:04,700 - lanedet.utils.recorder - INFO - epoch: 63  step: 28903  lr: 0.0001  loss: 1.0248  cls_loss: 0.0044  reg_loss: 0.9809  data: 0.0345  batch: 0.2305  eta: 1:07:20
+2024-11-27 08:45:28,191 - lanedet.utils.recorder - INFO - epoch: 63  step: 29003  lr: 0.0001  loss: 1.1545  cls_loss: 0.0142  reg_loss: 1.0128  data: 0.0328  batch: 0.2371  eta: 1:06:54
+2024-11-27 08:45:40,342 - lanedet.utils.recorder - INFO - epoch: 63  step: 29056  lr: 0.0001  loss: 1.0998  cls_loss: 0.0069  reg_loss: 1.0309  data: 0.0329  batch: 0.2200  eta: 1:06:41
+2024-11-27 08:46:43,061 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9561493315874081, "order": "desc"}, {"name": "FP", "value": 0.04642343637670761, "order": "asc"}, {"name": "FN", "value": 0.031032830098250672, "order": "asc"}]
+2024-11-27 08:46:43,062 - lanedet.utils.recorder - INFO - 0.9561493315874081
+2024-11-27 08:46:55,508 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 08:46:58,924 - lanedet.utils.recorder - INFO - epoch: 64  step: 29057  lr: 0.0001  loss: 1.0990  cls_loss: 0.0069  reg_loss: 1.0301  data: 0.1851  batch: 0.3749  eta: 1:06:42
+2024-11-27 08:47:22,085 - lanedet.utils.recorder - INFO - epoch: 64  step: 29157  lr: 0.0001  loss: 1.0500  cls_loss: 0.0079  reg_loss: 0.9706  data: 0.0326  batch: 0.2329  eta: 1:06:16
+2024-11-27 08:47:45,541 - lanedet.utils.recorder - INFO - epoch: 64  step: 29257  lr: 0.0001  loss: 1.0847  cls_loss: 0.0120  reg_loss: 0.9650  data: 0.0332  batch: 0.2369  eta: 1:05:51
+2024-11-27 08:48:09,041 - lanedet.utils.recorder - INFO - epoch: 64  step: 29357  lr: 0.0001  loss: 1.1876  cls_loss: 0.0122  reg_loss: 1.0659  data: 0.0334  batch: 0.2362  eta: 1:05:26
+2024-11-27 08:48:32,513 - lanedet.utils.recorder - INFO - epoch: 64  step: 29457  lr: 0.0001  loss: 1.0044  cls_loss: 0.0059  reg_loss: 0.9456  data: 0.0334  batch: 0.2309  eta: 1:05:00
+2024-11-27 08:48:44,585 - lanedet.utils.recorder - INFO - epoch: 64  step: 29510  lr: 0.0001  loss: 2.2435  cls_loss: 0.0140  reg_loss: 2.1037  data: 0.0354  batch: 0.2143  eta: 1:04:46
+2024-11-27 08:49:46,831 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9534496850501455, "order": "desc"}, {"name": "FP", "value": 0.03639468008626903, "order": "asc"}, {"name": "FN", "value": 0.03609513539420076, "order": "asc"}]
+2024-11-27 08:49:46,832 - lanedet.utils.recorder - INFO - 0.9534496850501455
+2024-11-27 08:49:46,832 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 08:49:49,900 - lanedet.utils.recorder - INFO - epoch: 65  step: 29511  lr: 0.0001  loss: 2.2621  cls_loss: 0.0142  reg_loss: 2.1205  data: 0.1726  batch: 0.3531  eta: 1:04:48
+2024-11-27 08:50:13,307 - lanedet.utils.recorder - INFO - epoch: 65  step: 29611  lr: 0.0001  loss: 1.0594  cls_loss: 0.0087  reg_loss: 0.9725  data: 0.0338  batch: 0.2322  eta: 1:04:22
+2024-11-27 08:50:36,653 - lanedet.utils.recorder - INFO - epoch: 65  step: 29711  lr: 0.0001  loss: 1.0759  cls_loss: 0.0088  reg_loss: 0.9874  data: 0.0326  batch: 0.2365  eta: 1:03:57
+2024-11-27 08:51:00,040 - lanedet.utils.recorder - INFO - epoch: 65  step: 29811  lr: 0.0001  loss: 1.0312  cls_loss: 0.0082  reg_loss: 0.9491  data: 0.0339  batch: 0.2322  eta: 1:03:31
+2024-11-27 08:51:23,361 - lanedet.utils.recorder - INFO - epoch: 65  step: 29911  lr: 0.0001  loss: 0.9831  cls_loss: 0.0069  reg_loss: 0.9146  data: 0.0343  batch: 0.2356  eta: 1:03:06
+2024-11-27 08:51:35,343 - lanedet.utils.recorder - INFO - epoch: 65  step: 29964  lr: 0.0001  loss: 0.9740  cls_loss: 0.0071  reg_loss: 0.9027  data: 0.0349  batch: 0.2141  eta: 1:02:52
+2024-11-27 08:52:37,701 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9521204554790932, "order": "desc"}, {"name": "FP", "value": 0.044883776659477806, "order": "asc"}, {"name": "FN", "value": 0.03339923316558828, "order": "asc"}]
+2024-11-27 08:52:37,702 - lanedet.utils.recorder - INFO - 0.9521204554790932
+2024-11-27 08:52:37,703 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 08:52:40,829 - lanedet.utils.recorder - INFO - epoch: 66  step: 29965  lr: 0.0001  loss: 0.9678  cls_loss: 0.0072  reg_loss: 0.8960  data: 0.1749  batch: 0.3558  eta: 1:02:53
+2024-11-27 08:53:04,607 - lanedet.utils.recorder - INFO - epoch: 66  step: 30065  lr: 0.0001  loss: 20.9474  cls_loss: 0.0165  reg_loss: 20.7822  data: 0.0331  batch: 0.2338  eta: 1:02:28
+2024-11-27 08:53:27,818 - lanedet.utils.recorder - INFO - epoch: 66  step: 30165  lr: 0.0001  loss: 1.0198  cls_loss: 0.0064  reg_loss: 0.9562  data: 0.0339  batch: 0.2269  eta: 1:02:02
+2024-11-27 08:53:51,381 - lanedet.utils.recorder - INFO - epoch: 66  step: 30265  lr: 0.0001  loss: 1.0316  cls_loss: 0.0080  reg_loss: 0.9520  data: 0.0338  batch: 0.2349  eta: 1:01:37
+2024-11-27 08:54:15,208 - lanedet.utils.recorder - INFO - epoch: 66  step: 30365  lr: 0.0001  loss: 1.0592  cls_loss: 0.0077  reg_loss: 0.9819  data: 0.0325  batch: 0.2373  eta: 1:01:12
+2024-11-27 08:54:27,271 - lanedet.utils.recorder - INFO - epoch: 66  step: 30418  lr: 0.0001  loss: 0.9815  cls_loss: 0.0040  reg_loss: 0.9418  data: 0.0345  batch: 0.2190  eta: 1:00:58
+2024-11-27 08:55:29,466 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9557069682653712, "order": "desc"}, {"name": "FP", "value": 0.04176851186197, "order": "asc"}, {"name": "FN", "value": 0.0301341960220465, "order": "asc"}]
+2024-11-27 08:55:29,467 - lanedet.utils.recorder - INFO - 0.9557069682653712
+2024-11-27 08:55:29,468 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 08:55:32,643 - lanedet.utils.recorder - INFO - epoch: 67  step: 30419  lr: 0.0001  loss: 0.9675  cls_loss: 0.0040  reg_loss: 0.9278  data: 0.1759  batch: 0.3639  eta: 1:00:59
+2024-11-27 08:55:56,144 - lanedet.utils.recorder - INFO - epoch: 67  step: 30519  lr: 0.0001  loss: 0.9440  cls_loss: 0.0056  reg_loss: 0.8881  data: 0.0333  batch: 0.2300  eta: 1:00:34
+2024-11-27 08:56:19,358 - lanedet.utils.recorder - INFO - epoch: 67  step: 30619  lr: 0.0001  loss: 1.0769  cls_loss: 0.0092  reg_loss: 0.9852  data: 0.0328  batch: 0.2334  eta: 1:00:08
+2024-11-27 08:56:42,848 - lanedet.utils.recorder - INFO - epoch: 67  step: 30719  lr: 0.0001  loss: 0.9788  cls_loss: 0.0069  reg_loss: 0.9097  data: 0.0325  batch: 0.2321  eta: 0:59:43
+2024-11-27 08:57:06,206 - lanedet.utils.recorder - INFO - epoch: 67  step: 30819  lr: 0.0001  loss: 1.0092  cls_loss: 0.0055  reg_loss: 0.9546  data: 0.0336  batch: 0.2316  eta: 0:59:18
+2024-11-27 08:57:18,354 - lanedet.utils.recorder - INFO - epoch: 67  step: 30872  lr: 0.0001  loss: 0.9433  cls_loss: 0.0058  reg_loss: 0.8850  data: 0.0337  batch: 0.2199  eta: 0:59:04
+2024-11-27 08:58:20,785 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9534855234329476, "order": "desc"}, {"name": "FP", "value": 0.04160675772825322, "order": "asc"}, {"name": "FN", "value": 0.03130242032111191, "order": "asc"}]
+2024-11-27 08:58:20,786 - lanedet.utils.recorder - INFO - 0.9534855234329476
+2024-11-27 08:58:20,786 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 08:58:24,238 - lanedet.utils.recorder - INFO - epoch: 68  step: 30873  lr: 0.0001  loss: 0.9241  cls_loss: 0.0057  reg_loss: 0.8670  data: 0.1864  batch: 0.3742  eta: 0:59:05
+2024-11-27 08:58:47,653 - lanedet.utils.recorder - INFO - epoch: 68  step: 30973  lr: 0.0001  loss: 1.0631  cls_loss: 0.0084  reg_loss: 0.9789  data: 0.0328  batch: 0.2318  eta: 0:58:40
+2024-11-27 08:59:10,710 - lanedet.utils.recorder - INFO - epoch: 68  step: 31073  lr: 0.0001  loss: 13.9230  cls_loss: 0.0175  reg_loss: 13.7478  data: 0.0342  batch: 0.2285  eta: 0:58:14
+2024-11-27 08:59:34,094 - lanedet.utils.recorder - INFO - epoch: 68  step: 31173  lr: 0.0001  loss: 0.9976  cls_loss: 0.0068  reg_loss: 0.9292  data: 0.0320  batch: 0.2291  eta: 0:57:49
+2024-11-27 08:59:57,413 - lanedet.utils.recorder - INFO - epoch: 68  step: 31273  lr: 0.0001  loss: 1.1201  cls_loss: 0.0087  reg_loss: 1.0332  data: 0.0318  batch: 0.2296  eta: 0:57:24
+2024-11-27 09:00:09,574 - lanedet.utils.recorder - INFO - epoch: 68  step: 31326  lr: 0.0001  loss: 1.0963  cls_loss: 0.0106  reg_loss: 0.9906  data: 0.0335  batch: 0.2236  eta: 0:57:10
+2024-11-27 09:01:11,936 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9524141162575666, "order": "desc"}, {"name": "FP", "value": 0.04828660436137086, "order": "asc"}, {"name": "FN", "value": 0.034208003834172024, "order": "asc"}]
+2024-11-27 09:01:11,937 - lanedet.utils.recorder - INFO - 0.9524141162575666
+2024-11-27 09:01:11,937 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:01:15,066 - lanedet.utils.recorder - INFO - epoch: 69  step: 31327  lr: 0.0001  loss: 1.0923  cls_loss: 0.0101  reg_loss: 0.9911  data: 0.1706  batch: 0.3652  eta: 0:57:11
+2024-11-27 09:01:38,449 - lanedet.utils.recorder - INFO - epoch: 69  step: 31427  lr: 0.0001  loss: 0.9786  cls_loss: 0.0081  reg_loss: 0.8978  data: 0.0319  batch: 0.2315  eta: 0:56:46
+2024-11-27 09:02:02,021 - lanedet.utils.recorder - INFO - epoch: 69  step: 31527  lr: 0.0001  loss: 1.0091  cls_loss: 0.0120  reg_loss: 0.8895  data: 0.0330  batch: 0.2319  eta: 0:56:21
+2024-11-27 09:02:25,385 - lanedet.utils.recorder - INFO - epoch: 69  step: 31627  lr: 0.0001  loss: 1.0071  cls_loss: 0.0075  reg_loss: 0.9321  data: 0.0326  batch: 0.2366  eta: 0:55:55
+2024-11-27 09:02:48,824 - lanedet.utils.recorder - INFO - epoch: 69  step: 31727  lr: 0.0001  loss: 1.0084  cls_loss: 0.0071  reg_loss: 0.9370  data: 0.0326  batch: 0.2373  eta: 0:55:30
+2024-11-27 09:03:00,966 - lanedet.utils.recorder - INFO - epoch: 69  step: 31780  lr: 0.0001  loss: 0.9749  cls_loss: 0.0068  reg_loss: 0.9065  data: 0.0335  batch: 0.2172  eta: 0:55:16
+2024-11-27 09:04:03,126 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.955768481907496, "order": "desc"}, {"name": "FP", "value": 0.04200215672178308, "order": "asc"}, {"name": "FN", "value": 0.03079319434459623, "order": "asc"}]
+2024-11-27 09:04:03,127 - lanedet.utils.recorder - INFO - 0.955768481907496
+2024-11-27 09:04:03,127 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:04:05,992 - lanedet.utils.recorder - INFO - epoch: 70  step: 31781  lr: 0.0001  loss: 0.9732  cls_loss: 0.0071  reg_loss: 0.9021  data: 0.1600  batch: 0.3460  eta: 0:55:17
+2024-11-27 09:04:29,484 - lanedet.utils.recorder - INFO - epoch: 70  step: 31881  lr: 0.0001  loss: 16.1340  cls_loss: 0.0142  reg_loss: 15.9922  data: 0.0326  batch: 0.2318  eta: 0:54:52
+2024-11-27 09:04:52,751 - lanedet.utils.recorder - INFO - epoch: 70  step: 31981  lr: 0.0001  loss: 1.0170  cls_loss: 0.0075  reg_loss: 0.9423  data: 0.0327  batch: 0.2327  eta: 0:54:27
+2024-11-27 09:05:16,089 - lanedet.utils.recorder - INFO - epoch: 70  step: 32081  lr: 0.0001  loss: 0.9634  cls_loss: 0.0048  reg_loss: 0.9153  data: 0.0338  batch: 0.2333  eta: 0:54:01
+2024-11-27 09:05:39,461 - lanedet.utils.recorder - INFO - epoch: 70  step: 32181  lr: 0.0001  loss: 1.0117  cls_loss: 0.0063  reg_loss: 0.9487  data: 0.0323  batch: 0.2345  eta: 0:53:36
+2024-11-27 09:05:51,554 - lanedet.utils.recorder - INFO - epoch: 70  step: 32234  lr: 0.0001  loss: 16.4830  cls_loss: 0.0091  reg_loss: 16.3916  data: 0.0314  batch: 0.2211  eta: 0:53:23
+2024-11-27 09:06:54,116 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9546992143370564, "order": "desc"}, {"name": "FP", "value": 0.04239156482147156, "order": "asc"}, {"name": "FN", "value": 0.031362329259525534, "order": "asc"}]
+2024-11-27 09:06:54,117 - lanedet.utils.recorder - INFO - 0.9546992143370564
+2024-11-27 09:06:54,118 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:06:57,527 - lanedet.utils.recorder - INFO - epoch: 71  step: 32235  lr: 0.0001  loss: 16.5105  cls_loss: 0.0106  reg_loss: 16.4046  data: 0.1830  batch: 0.3772  eta: 0:53:24
+2024-11-27 09:07:21,100 - lanedet.utils.recorder - INFO - epoch: 71  step: 32335  lr: 0.0001  loss: 8.5663  cls_loss: 0.0160  reg_loss: 8.4060  data: 0.0329  batch: 0.2322  eta: 0:52:59
+2024-11-27 09:07:44,481 - lanedet.utils.recorder - INFO - epoch: 71  step: 32435  lr: 0.0001  loss: 0.9596  cls_loss: 0.0083  reg_loss: 0.8770  data: 0.0338  batch: 0.2342  eta: 0:52:33
+2024-11-27 09:08:07,782 - lanedet.utils.recorder - INFO - epoch: 71  step: 32535  lr: 0.0001  loss: 1.0268  cls_loss: 0.0086  reg_loss: 0.9412  data: 0.0336  batch: 0.2337  eta: 0:52:08
+2024-11-27 09:08:31,204 - lanedet.utils.recorder - INFO - epoch: 71  step: 32635  lr: 0.0001  loss: 1.5288  cls_loss: 0.0081  reg_loss: 1.4480  data: 0.0324  batch: 0.2364  eta: 0:51:43
+2024-11-27 09:08:43,177 - lanedet.utils.recorder - INFO - epoch: 71  step: 32688  lr: 0.0001  loss: 1.0642  cls_loss: 0.0095  reg_loss: 0.9692  data: 0.0327  batch: 0.2170  eta: 0:51:29
+2024-11-27 09:09:45,503 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9548099388928765, "order": "desc"}, {"name": "FP", "value": 0.042223819793913445, "order": "asc"}, {"name": "FN", "value": 0.03208123652048886, "order": "asc"}]
+2024-11-27 09:09:45,504 - lanedet.utils.recorder - INFO - 0.9548099388928765
+2024-11-27 09:09:45,505 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:09:48,596 - lanedet.utils.recorder - INFO - epoch: 72  step: 32689  lr: 0.0001  loss: 1.0593  cls_loss: 0.0084  reg_loss: 0.9756  data: 0.1714  batch: 0.3564  eta: 0:51:30
+2024-11-27 09:10:11,782 - lanedet.utils.recorder - INFO - epoch: 72  step: 32789  lr: 0.0001  loss: 1.0496  cls_loss: 0.0081  reg_loss: 0.9685  data: 0.0313  batch: 0.2304  eta: 0:51:05
+2024-11-27 09:10:35,381 - lanedet.utils.recorder - INFO - epoch: 72  step: 32889  lr: 0.0001  loss: 1.0604  cls_loss: 0.0103  reg_loss: 0.9570  data: 0.0330  batch: 0.2359  eta: 0:50:40
+2024-11-27 09:10:58,800 - lanedet.utils.recorder - INFO - epoch: 72  step: 32989  lr: 0.0001  loss: 0.9969  cls_loss: 0.0079  reg_loss: 0.9178  data: 0.0325  batch: 0.2353  eta: 0:50:15
+2024-11-27 09:11:22,370 - lanedet.utils.recorder - INFO - epoch: 72  step: 33089  lr: 0.0001  loss: 1.0565  cls_loss: 0.0075  reg_loss: 0.9816  data: 0.0322  batch: 0.2390  eta: 0:49:50
+2024-11-27 09:11:34,310 - lanedet.utils.recorder - INFO - epoch: 72  step: 33142  lr: 0.0000  loss: 0.9797  cls_loss: 0.0063  reg_loss: 0.9165  data: 0.0352  batch: 0.2107  eta: 0:49:36
+2024-11-27 09:12:36,682 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9542103146075019, "order": "desc"}, {"name": "FP", "value": 0.04091780493649669, "order": "asc"}, {"name": "FN", "value": 0.03235082674335011, "order": "asc"}]
+2024-11-27 09:12:36,683 - lanedet.utils.recorder - INFO - 0.9542103146075019
+2024-11-27 09:12:36,683 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:12:39,560 - lanedet.utils.recorder - INFO - epoch: 73  step: 33143  lr: 0.0000  loss: 0.9774  cls_loss: 0.0062  reg_loss: 0.9156  data: 0.1616  batch: 0.3405  eta: 0:49:37
+2024-11-27 09:13:02,809 - lanedet.utils.recorder - INFO - epoch: 73  step: 33243  lr: 0.0000  loss: 10.0657  cls_loss: 0.0080  reg_loss: 9.9861  data: 0.0336  batch: 0.2310  eta: 0:49:11
+2024-11-27 09:13:26,150 - lanedet.utils.recorder - INFO - epoch: 73  step: 33343  lr: 0.0000  loss: 0.9411  cls_loss: 0.0082  reg_loss: 0.8587  data: 0.0321  batch: 0.2390  eta: 0:48:46
+2024-11-27 09:13:49,745 - lanedet.utils.recorder - INFO - epoch: 73  step: 33443  lr: 0.0000  loss: 0.8921  cls_loss: 0.0033  reg_loss: 0.8591  data: 0.0334  batch: 0.2339  eta: 0:48:21
+2024-11-27 09:14:13,046 - lanedet.utils.recorder - INFO - epoch: 73  step: 33543  lr: 0.0000  loss: 0.9463  cls_loss: 0.0068  reg_loss: 0.8781  data: 0.0330  batch: 0.2325  eta: 0:47:56
+2024-11-27 09:14:25,063 - lanedet.utils.recorder - INFO - epoch: 73  step: 33596  lr: 0.0000  loss: 0.9941  cls_loss: 0.0084  reg_loss: 0.9104  data: 0.0342  batch: 0.2158  eta: 0:47:43
+2024-11-27 09:15:27,825 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.951711256033679, "order": "desc"}, {"name": "FP", "value": 0.041415049125329666, "order": "asc"}, {"name": "FN", "value": 0.03333932422717467, "order": "asc"}]
+2024-11-27 09:15:27,825 - lanedet.utils.recorder - INFO - 0.951711256033679
+2024-11-27 09:15:27,826 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:15:30,916 - lanedet.utils.recorder - INFO - epoch: 74  step: 33597  lr: 0.0000  loss: 0.9834  cls_loss: 0.0073  reg_loss: 0.9105  data: 0.1719  batch: 0.3551  eta: 0:47:43
+2024-11-27 09:15:54,146 - lanedet.utils.recorder - INFO - epoch: 74  step: 33697  lr: 0.0000  loss: 1.0138  cls_loss: 0.0108  reg_loss: 0.9056  data: 0.0332  batch: 0.2268  eta: 0:47:18
+2024-11-27 09:16:17,498 - lanedet.utils.recorder - INFO - epoch: 74  step: 33797  lr: 0.0000  loss: 3.0812  cls_loss: 0.0080  reg_loss: 3.0008  data: 0.0337  batch: 0.2342  eta: 0:46:53
+2024-11-27 09:16:40,847 - lanedet.utils.recorder - INFO - epoch: 74  step: 33897  lr: 0.0000  loss: 0.9865  cls_loss: 0.0092  reg_loss: 0.8948  data: 0.0334  batch: 0.2329  eta: 0:46:28
+2024-11-27 09:17:04,269 - lanedet.utils.recorder - INFO - epoch: 74  step: 33997  lr: 0.0000  loss: 0.9789  cls_loss: 0.0079  reg_loss: 0.9000  data: 0.0335  batch: 0.2341  eta: 0:46:03
+2024-11-27 09:17:16,214 - lanedet.utils.recorder - INFO - epoch: 74  step: 34050  lr: 0.0000  loss: 0.9582  cls_loss: 0.0056  reg_loss: 0.9024  data: 0.0342  batch: 0.2142  eta: 0:45:49
+2024-11-27 09:18:19,132 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9532999127041085, "order": "desc"}, {"name": "FP", "value": 0.0414569853822192, "order": "asc"}, {"name": "FN", "value": 0.03480709321830815, "order": "asc"}]
+2024-11-27 09:18:19,133 - lanedet.utils.recorder - INFO - 0.9532999127041085
+2024-11-27 09:18:19,134 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:18:22,522 - lanedet.utils.recorder - INFO - epoch: 75  step: 34051  lr: 0.0000  loss: 0.9755  cls_loss: 0.0052  reg_loss: 0.9236  data: 0.1862  batch: 0.3682  eta: 0:45:50
+2024-11-27 09:18:45,789 - lanedet.utils.recorder - INFO - epoch: 75  step: 34151  lr: 0.0000  loss: 0.8529  cls_loss: 0.0052  reg_loss: 0.8006  data: 0.0325  batch: 0.2299  eta: 0:45:25
+2024-11-27 09:19:09,113 - lanedet.utils.recorder - INFO - epoch: 75  step: 34251  lr: 0.0000  loss: 0.9066  cls_loss: 0.0064  reg_loss: 0.8429  data: 0.0332  batch: 0.2297  eta: 0:45:00
+2024-11-27 09:19:32,425 - lanedet.utils.recorder - INFO - epoch: 75  step: 34351  lr: 0.0000  loss: 1.1315  cls_loss: 0.0059  reg_loss: 1.0725  data: 0.0330  batch: 0.2332  eta: 0:44:35
+2024-11-27 09:19:55,603 - lanedet.utils.recorder - INFO - epoch: 75  step: 34451  lr: 0.0000  loss: 6.5390  cls_loss: 0.0066  reg_loss: 6.4732  data: 0.0333  batch: 0.2318  eta: 0:44:10
+2024-11-27 09:20:07,569 - lanedet.utils.recorder - INFO - epoch: 75  step: 34504  lr: 0.0000  loss: 0.9674  cls_loss: 0.0070  reg_loss: 0.8970  data: 0.0344  batch: 0.2127  eta: 0:43:56
+2024-11-27 09:21:10,320 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.955388167128816, "order": "desc"}, {"name": "FP", "value": 0.04086388689192445, "order": "asc"}, {"name": "FN", "value": 0.030883057752216638, "order": "asc"}]
+2024-11-27 09:21:10,321 - lanedet.utils.recorder - INFO - 0.955388167128816
+2024-11-27 09:21:10,322 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:21:13,269 - lanedet.utils.recorder - INFO - epoch: 76  step: 34505  lr: 0.0000  loss: 0.9821  cls_loss: 0.0070  reg_loss: 0.9116  data: 0.1623  batch: 0.3453  eta: 0:43:57
+2024-11-27 09:21:36,941 - lanedet.utils.recorder - INFO - epoch: 76  step: 34605  lr: 0.0000  loss: 1.0355  cls_loss: 0.0075  reg_loss: 0.9610  data: 0.0322  batch: 0.2397  eta: 0:43:32
+2024-11-27 09:22:00,400 - lanedet.utils.recorder - INFO - epoch: 76  step: 34705  lr: 0.0000  loss: 0.9200  cls_loss: 0.0042  reg_loss: 0.8776  data: 0.0317  batch: 0.2371  eta: 0:43:07
+2024-11-27 09:22:23,888 - lanedet.utils.recorder - INFO - epoch: 76  step: 34805  lr: 0.0000  loss: 0.9768  cls_loss: 0.0083  reg_loss: 0.8941  data: 0.0337  batch: 0.2337  eta: 0:42:42
+2024-11-27 09:22:47,524 - lanedet.utils.recorder - INFO - epoch: 76  step: 34905  lr: 0.0000  loss: 0.9698  cls_loss: 0.0056  reg_loss: 0.9138  data: 0.0335  batch: 0.2373  eta: 0:42:17
+2024-11-27 09:22:59,630 - lanedet.utils.recorder - INFO - epoch: 76  step: 34958  lr: 0.0000  loss: 0.9107  cls_loss: 0.0047  reg_loss: 0.8635  data: 0.0341  batch: 0.2169  eta: 0:42:04
+2024-11-27 09:24:01,909 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9528602238882539, "order": "desc"}, {"name": "FP", "value": 0.03783249460819569, "order": "asc"}, {"name": "FN", "value": 0.03387850467289716, "order": "asc"}]
+2024-11-27 09:24:01,910 - lanedet.utils.recorder - INFO - 0.9528602238882539
+2024-11-27 09:24:01,910 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:24:05,145 - lanedet.utils.recorder - INFO - epoch: 77  step: 34959  lr: 0.0000  loss: 0.9093  cls_loss: 0.0049  reg_loss: 0.8605  data: 0.1767  batch: 0.3639  eta: 0:42:04
+2024-11-27 09:24:28,625 - lanedet.utils.recorder - INFO - epoch: 77  step: 35059  lr: 0.0000  loss: 0.9600  cls_loss: 0.0069  reg_loss: 0.8909  data: 0.0328  batch: 0.2317  eta: 0:41:39
+2024-11-27 09:24:52,099 - lanedet.utils.recorder - INFO - epoch: 77  step: 35159  lr: 0.0000  loss: 9.2362  cls_loss: 0.0118  reg_loss: 9.1183  data: 0.0321  batch: 0.2316  eta: 0:41:14
+2024-11-27 09:25:15,439 - lanedet.utils.recorder - INFO - epoch: 77  step: 35259  lr: 0.0000  loss: 0.9621  cls_loss: 0.0062  reg_loss: 0.9002  data: 0.0333  batch: 0.2300  eta: 0:40:49
+2024-11-27 09:25:38,768 - lanedet.utils.recorder - INFO - epoch: 77  step: 35359  lr: 0.0000  loss: 0.9406  cls_loss: 0.0073  reg_loss: 0.8678  data: 0.0323  batch: 0.2298  eta: 0:40:24
+2024-11-27 09:25:50,598 - lanedet.utils.recorder - INFO - epoch: 77  step: 35412  lr: 0.0000  loss: 1.0355  cls_loss: 0.0102  reg_loss: 0.9335  data: 0.0338  batch: 0.2156  eta: 0:40:11
+2024-11-27 09:26:52,945 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9528409674437611, "order": "desc"}, {"name": "FP", "value": 0.03543014617780988, "order": "asc"}, {"name": "FN", "value": 0.034058231488138, "order": "asc"}]
+2024-11-27 09:26:52,945 - lanedet.utils.recorder - INFO - 0.9528409674437611
+2024-11-27 09:26:52,946 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:26:56,074 - lanedet.utils.recorder - INFO - epoch: 78  step: 35413  lr: 0.0000  loss: 1.0417  cls_loss: 0.0102  reg_loss: 0.9392  data: 0.1742  batch: 0.3579  eta: 0:40:11
+2024-11-27 09:27:19,172 - lanedet.utils.recorder - INFO - epoch: 78  step: 35513  lr: 0.0000  loss: 0.8970  cls_loss: 0.0047  reg_loss: 0.8501  data: 0.0330  batch: 0.2256  eta: 0:39:46
+2024-11-27 09:27:42,404 - lanedet.utils.recorder - INFO - epoch: 78  step: 35613  lr: 0.0000  loss: 14.5712  cls_loss: 0.0136  reg_loss: 14.4349  data: 0.0329  batch: 0.2369  eta: 0:39:21
+2024-11-27 09:28:05,599 - lanedet.utils.recorder - INFO - epoch: 78  step: 35713  lr: 0.0000  loss: 0.9641  cls_loss: 0.0070  reg_loss: 0.8940  data: 0.0330  batch: 0.2337  eta: 0:38:56
+2024-11-27 09:28:29,077 - lanedet.utils.recorder - INFO - epoch: 78  step: 35813  lr: 0.0000  loss: 1.1708  cls_loss: 0.0104  reg_loss: 1.0667  data: 0.0326  batch: 0.2373  eta: 0:38:31
+2024-11-27 09:28:40,915 - lanedet.utils.recorder - INFO - epoch: 78  step: 35866  lr: 0.0000  loss: 0.9496  cls_loss: 0.0047  reg_loss: 0.9025  data: 0.0351  batch: 0.2102  eta: 0:38:18
+2024-11-27 09:29:43,362 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9551207165108935, "order": "desc"}, {"name": "FP", "value": 0.04140905823148832, "order": "asc"}, {"name": "FN", "value": 0.031332374790318716, "order": "asc"}]
+2024-11-27 09:29:43,362 - lanedet.utils.recorder - INFO - 0.9551207165108935
+2024-11-27 09:29:43,363 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:29:46,505 - lanedet.utils.recorder - INFO - epoch: 79  step: 35867  lr: 0.0000  loss: 0.9854  cls_loss: 0.0065  reg_loss: 0.9202  data: 0.1762  batch: 0.3532  eta: 0:38:18
+2024-11-27 09:30:09,757 - lanedet.utils.recorder - INFO - epoch: 79  step: 35967  lr: 0.0000  loss: 0.9445  cls_loss: 0.0070  reg_loss: 0.8749  data: 0.0325  batch: 0.2315  eta: 0:37:53
+2024-11-27 09:30:33,072 - lanedet.utils.recorder - INFO - epoch: 79  step: 36067  lr: 0.0000  loss: 0.9854  cls_loss: 0.0056  reg_loss: 0.9294  data: 0.0336  batch: 0.2327  eta: 0:37:29
+2024-11-27 09:30:56,541 - lanedet.utils.recorder - INFO - epoch: 79  step: 36167  lr: 0.0000  loss: 0.9008  cls_loss: 0.0088  reg_loss: 0.8127  data: 0.0329  batch: 0.2395  eta: 0:37:04
+2024-11-27 09:31:20,074 - lanedet.utils.recorder - INFO - epoch: 79  step: 36267  lr: 0.0000  loss: 0.9601  cls_loss: 0.0073  reg_loss: 0.8870  data: 0.0338  batch: 0.2374  eta: 0:36:39
+2024-11-27 09:31:31,965 - lanedet.utils.recorder - INFO - epoch: 79  step: 36320  lr: 0.0000  loss: 0.9875  cls_loss: 0.0036  reg_loss: 0.9516  data: 0.0340  batch: 0.2150  eta: 0:36:25
+2024-11-27 09:32:34,512 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9548104737941114, "order": "desc"}, {"name": "FP", "value": 0.040414569853822364, "order": "asc"}, {"name": "FN", "value": 0.03217109992810927, "order": "asc"}]
+2024-11-27 09:32:34,513 - lanedet.utils.recorder - INFO - 0.9548104737941114
+2024-11-27 09:32:34,513 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:32:37,478 - lanedet.utils.recorder - INFO - epoch: 80  step: 36321  lr: 0.0000  loss: 0.9951  cls_loss: 0.0036  reg_loss: 0.9592  data: 0.1651  batch: 0.3481  eta: 0:36:26
+2024-11-27 09:33:00,642 - lanedet.utils.recorder - INFO - epoch: 80  step: 36421  lr: 0.0000  loss: 0.8919  cls_loss: 0.0064  reg_loss: 0.8280  data: 0.0335  batch: 0.2313  eta: 0:36:01
+2024-11-27 09:33:24,359 - lanedet.utils.recorder - INFO - epoch: 80  step: 36521  lr: 0.0000  loss: 0.9016  cls_loss: 0.0089  reg_loss: 0.8129  data: 0.0330  batch: 0.2373  eta: 0:35:36
+2024-11-27 09:33:47,988 - lanedet.utils.recorder - INFO - epoch: 80  step: 36621  lr: 0.0000  loss: 0.8953  cls_loss: 0.0044  reg_loss: 0.8511  data: 0.0333  batch: 0.2400  eta: 0:35:11
+2024-11-27 09:34:11,383 - lanedet.utils.recorder - INFO - epoch: 80  step: 36721  lr: 0.0000  loss: 0.9557  cls_loss: 0.0122  reg_loss: 0.8342  data: 0.0333  batch: 0.2272  eta: 0:34:46
+2024-11-27 09:34:23,380 - lanedet.utils.recorder - INFO - epoch: 80  step: 36774  lr: 0.0000  loss: 0.9892  cls_loss: 0.0066  reg_loss: 0.9236  data: 0.0323  batch: 0.2174  eta: 0:34:33
+2024-11-27 09:35:26,426 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9527264985792958, "order": "desc"}, {"name": "FP", "value": 0.03934219985621872, "order": "asc"}, {"name": "FN", "value": 0.03450754852624009, "order": "asc"}]
+2024-11-27 09:35:26,426 - lanedet.utils.recorder - INFO - 0.9527264985792958
+2024-11-27 09:35:26,427 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:35:29,533 - lanedet.utils.recorder - INFO - epoch: 81  step: 36775  lr: 0.0000  loss: 1.0046  cls_loss: 0.0061  reg_loss: 0.9437  data: 0.1721  batch: 0.3584  eta: 0:34:33
+2024-11-27 09:35:52,810 - lanedet.utils.recorder - INFO - epoch: 81  step: 36875  lr: 0.0000  loss: 0.9078  cls_loss: 0.0050  reg_loss: 0.8578  data: 0.0338  batch: 0.2289  eta: 0:34:08
+2024-11-27 09:36:16,049 - lanedet.utils.recorder - INFO - epoch: 81  step: 36975  lr: 0.0000  loss: 0.9131  cls_loss: 0.0071  reg_loss: 0.8420  data: 0.0330  batch: 0.2339  eta: 0:33:44
+2024-11-27 09:36:39,414 - lanedet.utils.recorder - INFO - epoch: 81  step: 37075  lr: 0.0000  loss: 1.2032  cls_loss: 0.0082  reg_loss: 1.1211  data: 0.0341  batch: 0.2317  eta: 0:33:19
+2024-11-27 09:37:03,057 - lanedet.utils.recorder - INFO - epoch: 81  step: 37175  lr: 0.0000  loss: 0.9772  cls_loss: 0.0051  reg_loss: 0.9259  data: 0.0332  batch: 0.2336  eta: 0:32:54
+2024-11-27 09:37:15,007 - lanedet.utils.recorder - INFO - epoch: 81  step: 37228  lr: 0.0000  loss: 0.9921  cls_loss: 0.0095  reg_loss: 0.8971  data: 0.0344  batch: 0.2197  eta: 0:32:41
+2024-11-27 09:38:17,370 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9546724692752682, "order": "desc"}, {"name": "FP", "value": 0.043451953031392494, "order": "asc"}, {"name": "FN", "value": 0.032111190989695663, "order": "asc"}]
+2024-11-27 09:38:17,371 - lanedet.utils.recorder - INFO - 0.9546724692752682
+2024-11-27 09:38:17,371 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:38:20,473 - lanedet.utils.recorder - INFO - epoch: 82  step: 37229  lr: 0.0000  loss: 1.0079  cls_loss: 0.0102  reg_loss: 0.9061  data: 0.1738  batch: 0.3602  eta: 0:32:41
+2024-11-27 09:38:43,834 - lanedet.utils.recorder - INFO - epoch: 82  step: 37329  lr: 0.0000  loss: 0.8848  cls_loss: 0.0052  reg_loss: 0.8331  data: 0.0335  batch: 0.2318  eta: 0:32:16
+2024-11-27 09:39:07,253 - lanedet.utils.recorder - INFO - epoch: 82  step: 37429  lr: 0.0000  loss: 0.9507  cls_loss: 0.0069  reg_loss: 0.8813  data: 0.0335  batch: 0.2362  eta: 0:31:51
+2024-11-27 09:39:30,493 - lanedet.utils.recorder - INFO - epoch: 82  step: 37529  lr: 0.0000  loss: 1.1153  cls_loss: 0.0072  reg_loss: 1.0432  data: 0.0327  batch: 0.2311  eta: 0:31:26
+2024-11-27 09:39:54,147 - lanedet.utils.recorder - INFO - epoch: 82  step: 37629  lr: 0.0000  loss: 0.9394  cls_loss: 0.0071  reg_loss: 0.8681  data: 0.0325  batch: 0.2360  eta: 0:31:02
+2024-11-27 09:40:06,283 - lanedet.utils.recorder - INFO - epoch: 82  step: 37682  lr: 0.0000  loss: 1.0097  cls_loss: 0.0063  reg_loss: 0.9471  data: 0.0348  batch: 0.2187  eta: 0:30:48
+2024-11-27 09:41:08,625 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9543584822498304, "order": "desc"}, {"name": "FP", "value": 0.040480469686077346, "order": "asc"}, {"name": "FN", "value": 0.03348909657320872, "order": "asc"}]
+2024-11-27 09:41:08,626 - lanedet.utils.recorder - INFO - 0.9543584822498304
+2024-11-27 09:41:08,626 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:41:11,437 - lanedet.utils.recorder - INFO - epoch: 83  step: 37683  lr: 0.0000  loss: 1.0109  cls_loss: 0.0059  reg_loss: 0.9520  data: 0.1593  batch: 0.3446  eta: 0:30:49
+2024-11-27 09:41:34,967 - lanedet.utils.recorder - INFO - epoch: 83  step: 37783  lr: 0.0000  loss: 0.9611  cls_loss: 0.0059  reg_loss: 0.9024  data: 0.0334  batch: 0.2350  eta: 0:30:24
+2024-11-27 09:41:58,286 - lanedet.utils.recorder - INFO - epoch: 83  step: 37883  lr: 0.0000  loss: 0.9290  cls_loss: 0.0041  reg_loss: 0.8883  data: 0.0325  batch: 0.2349  eta: 0:29:59
+2024-11-27 09:42:21,567 - lanedet.utils.recorder - INFO - epoch: 83  step: 37983  lr: 0.0000  loss: 0.9442  cls_loss: 0.0067  reg_loss: 0.8772  data: 0.0335  batch: 0.2372  eta: 0:29:34
+2024-11-27 09:42:44,977 - lanedet.utils.recorder - INFO - epoch: 83  step: 38083  lr: 0.0000  loss: 0.9788  cls_loss: 0.0065  reg_loss: 0.9138  data: 0.0327  batch: 0.2331  eta: 0:29:09
+2024-11-27 09:42:57,042 - lanedet.utils.recorder - INFO - epoch: 83  step: 38136  lr: 0.0000  loss: 11.5893  cls_loss: 0.0151  reg_loss: 11.4382  data: 0.0345  batch: 0.2181  eta: 0:28:56
+2024-11-27 09:43:59,587 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9535090590873235, "order": "desc"}, {"name": "FP", "value": 0.03981548046968625, "order": "asc"}, {"name": "FN", "value": 0.03414809489575843, "order": "asc"}]
+2024-11-27 09:43:59,588 - lanedet.utils.recorder - INFO - 0.9535090590873235
+2024-11-27 09:43:59,588 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:44:02,796 - lanedet.utils.recorder - INFO - epoch: 84  step: 38137  lr: 0.0000  loss: 11.5984  cls_loss: 0.0151  reg_loss: 11.4473  data: 0.1765  batch: 0.3623  eta: 0:28:56
+2024-11-27 09:44:26,192 - lanedet.utils.recorder - INFO - epoch: 84  step: 38237  lr: 0.0000  loss: 0.9124  cls_loss: 0.0070  reg_loss: 0.8422  data: 0.0318  batch: 0.2366  eta: 0:28:32
+2024-11-27 09:44:49,594 - lanedet.utils.recorder - INFO - epoch: 84  step: 38337  lr: 0.0000  loss: 1.1713  cls_loss: 0.0089  reg_loss: 1.0819  data: 0.0325  batch: 0.2331  eta: 0:28:07
+2024-11-27 09:45:12,937 - lanedet.utils.recorder - INFO - epoch: 84  step: 38437  lr: 0.0000  loss: 0.9374  cls_loss: 0.0075  reg_loss: 0.8626  data: 0.0344  batch: 0.2302  eta: 0:27:42
+2024-11-27 09:45:36,299 - lanedet.utils.recorder - INFO - epoch: 84  step: 38537  lr: 0.0000  loss: 0.9564  cls_loss: 0.0065  reg_loss: 0.8912  data: 0.0326  batch: 0.2290  eta: 0:27:17
+2024-11-27 09:45:48,527 - lanedet.utils.recorder - INFO - epoch: 84  step: 38590  lr: 0.0000  loss: 0.9337  cls_loss: 0.0049  reg_loss: 0.8843  data: 0.0331  batch: 0.2228  eta: 0:27:04
+2024-11-27 09:46:50,766 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9545114640032797, "order": "desc"}, {"name": "FP", "value": 0.040097052480230225, "order": "asc"}, {"name": "FN", "value": 0.030913012221423446, "order": "asc"}]
+2024-11-27 09:46:50,767 - lanedet.utils.recorder - INFO - 0.9545114640032797
+2024-11-27 09:46:50,768 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:46:53,842 - lanedet.utils.recorder - INFO - epoch: 85  step: 38591  lr: 0.0000  loss: 0.9534  cls_loss: 0.0057  reg_loss: 0.8963  data: 0.1702  batch: 0.3619  eta: 0:27:04
+2024-11-27 09:47:17,398 - lanedet.utils.recorder - INFO - epoch: 85  step: 38691  lr: 0.0000  loss: 0.8852  cls_loss: 0.0041  reg_loss: 0.8438  data: 0.0337  batch: 0.2332  eta: 0:26:39
+2024-11-27 09:47:40,894 - lanedet.utils.recorder - INFO - epoch: 85  step: 38791  lr: 0.0000  loss: 0.9160  cls_loss: 0.0081  reg_loss: 0.8354  data: 0.0336  batch: 0.2351  eta: 0:26:15
+2024-11-27 09:48:04,117 - lanedet.utils.recorder - INFO - epoch: 85  step: 38891  lr: 0.0000  loss: 0.8773  cls_loss: 0.0055  reg_loss: 0.8227  data: 0.0332  batch: 0.2304  eta: 0:25:50
+2024-11-27 09:48:27,277 - lanedet.utils.recorder - INFO - epoch: 85  step: 38991  lr: 0.0000  loss: 2.2603  cls_loss: 0.0048  reg_loss: 2.2126  data: 0.0333  batch: 0.2330  eta: 0:25:25
+2024-11-27 09:48:39,401 - lanedet.utils.recorder - INFO - epoch: 85  step: 39044  lr: 0.0000  loss: 0.9330  cls_loss: 0.0050  reg_loss: 0.8826  data: 0.0343  batch: 0.2191  eta: 0:25:12
+2024-11-27 09:49:41,668 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.955387632227579, "order": "desc"}, {"name": "FP", "value": 0.04129523124850245, "order": "asc"}, {"name": "FN", "value": 0.030224059429666914, "order": "asc"}]
+2024-11-27 09:49:41,669 - lanedet.utils.recorder - INFO - 0.955387632227579
+2024-11-27 09:49:41,670 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:49:44,521 - lanedet.utils.recorder - INFO - epoch: 86  step: 39045  lr: 0.0000  loss: 0.9201  cls_loss: 0.0050  reg_loss: 0.8705  data: 0.1612  batch: 0.3483  eta: 0:25:12
+2024-11-27 09:50:08,421 - lanedet.utils.recorder - INFO - epoch: 86  step: 39145  lr: 0.0000  loss: 0.8893  cls_loss: 0.0047  reg_loss: 0.8423  data: 0.0310  batch: 0.2357  eta: 0:24:47
+2024-11-27 09:50:31,663 - lanedet.utils.recorder - INFO - epoch: 86  step: 39245  lr: 0.0000  loss: 0.8376  cls_loss: 0.0036  reg_loss: 0.8020  data: 0.0329  batch: 0.2360  eta: 0:24:23
+2024-11-27 09:50:55,242 - lanedet.utils.recorder - INFO - epoch: 86  step: 39345  lr: 0.0000  loss: 8.2634  cls_loss: 0.0059  reg_loss: 8.2044  data: 0.0323  batch: 0.2314  eta: 0:23:58
+2024-11-27 09:51:18,899 - lanedet.utils.recorder - INFO - epoch: 86  step: 39445  lr: 0.0000  loss: 0.9135  cls_loss: 0.0051  reg_loss: 0.8623  data: 0.0334  batch: 0.2390  eta: 0:23:33
+2024-11-27 09:51:30,879 - lanedet.utils.recorder - INFO - epoch: 86  step: 39498  lr: 0.0000  loss: 0.9203  cls_loss: 0.0064  reg_loss: 0.8559  data: 0.0341  batch: 0.2186  eta: 0:23:20
+2024-11-27 09:52:33,130 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9539027463968989, "order": "desc"}, {"name": "FP", "value": 0.03769470404984439, "order": "asc"}, {"name": "FN", "value": 0.03318955188114066, "order": "asc"}]
+2024-11-27 09:52:33,131 - lanedet.utils.recorder - INFO - 0.9539027463968989
+2024-11-27 09:52:33,131 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:52:35,970 - lanedet.utils.recorder - INFO - epoch: 87  step: 39499  lr: 0.0000  loss: 0.9359  cls_loss: 0.0064  reg_loss: 0.8719  data: 0.1576  batch: 0.3461  eta: 0:23:20
+2024-11-27 09:52:59,702 - lanedet.utils.recorder - INFO - epoch: 87  step: 39599  lr: 0.0000  loss: 0.9097  cls_loss: 0.0099  reg_loss: 0.8109  data: 0.0327  batch: 0.2331  eta: 0:22:55
+2024-11-27 09:53:22,799 - lanedet.utils.recorder - INFO - epoch: 87  step: 39699  lr: 0.0000  loss: 0.8670  cls_loss: 0.0057  reg_loss: 0.8096  data: 0.0326  batch: 0.2294  eta: 0:22:31
+2024-11-27 09:53:46,026 - lanedet.utils.recorder - INFO - epoch: 87  step: 39799  lr: 0.0000  loss: 0.8662  cls_loss: 0.0043  reg_loss: 0.8229  data: 0.0325  batch: 0.2266  eta: 0:22:06
+2024-11-27 09:54:09,091 - lanedet.utils.recorder - INFO - epoch: 87  step: 39899  lr: 0.0000  loss: 0.9133  cls_loss: 0.0054  reg_loss: 0.8593  data: 0.0341  batch: 0.2287  eta: 0:21:41
+2024-11-27 09:54:21,145 - lanedet.utils.recorder - INFO - epoch: 87  step: 39952  lr: 0.0000  loss: 0.8542  cls_loss: 0.0068  reg_loss: 0.7862  data: 0.0322  batch: 0.2183  eta: 0:21:28
+2024-11-27 09:55:23,381 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9531287443086431, "order": "desc"}, {"name": "FP", "value": 0.040408578959981, "order": "asc"}, {"name": "FN", "value": 0.0328900071890726, "order": "asc"}]
+2024-11-27 09:55:23,381 - lanedet.utils.recorder - INFO - 0.9531287443086431
+2024-11-27 09:55:23,382 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:55:26,596 - lanedet.utils.recorder - INFO - epoch: 88  step: 39953  lr: 0.0000  loss: 0.8417  cls_loss: 0.0069  reg_loss: 0.7724  data: 0.1753  batch: 0.3645  eta: 0:21:28
+2024-11-27 09:55:49,982 - lanedet.utils.recorder - INFO - epoch: 88  step: 40053  lr: 0.0000  loss: 0.9194  cls_loss: 0.0071  reg_loss: 0.8483  data: 0.0334  batch: 0.2304  eta: 0:21:03
+2024-11-27 09:56:13,373 - lanedet.utils.recorder - INFO - epoch: 88  step: 40153  lr: 0.0000  loss: 0.9116  cls_loss: 0.0053  reg_loss: 0.8587  data: 0.0320  batch: 0.2310  eta: 0:20:39
+2024-11-27 09:56:36,748 - lanedet.utils.recorder - INFO - epoch: 88  step: 40253  lr: 0.0000  loss: 0.9067  cls_loss: 0.0038  reg_loss: 0.8689  data: 0.0329  batch: 0.2335  eta: 0:20:14
+2024-11-27 09:56:59,999 - lanedet.utils.recorder - INFO - epoch: 88  step: 40353  lr: 0.0000  loss: 0.8628  cls_loss: 0.0047  reg_loss: 0.8156  data: 0.0341  batch: 0.2298  eta: 0:19:49
+2024-11-27 09:57:11,935 - lanedet.utils.recorder - INFO - epoch: 88  step: 40406  lr: 0.0000  loss: 0.9547  cls_loss: 0.0095  reg_loss: 0.8595  data: 0.0341  batch: 0.2140  eta: 0:19:36
+2024-11-27 09:58:14,581 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9537481599397423, "order": "desc"}, {"name": "FP", "value": 0.03722142343637686, "order": "asc"}, {"name": "FN", "value": 0.03268032590462497, "order": "asc"}]
+2024-11-27 09:58:14,582 - lanedet.utils.recorder - INFO - 0.9537481599397423
+2024-11-27 09:58:14,583 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 09:58:17,685 - lanedet.utils.recorder - INFO - epoch: 89  step: 40407  lr: 0.0000  loss: 0.9607  cls_loss: 0.0094  reg_loss: 0.8666  data: 0.1715  batch: 0.3547  eta: 0:19:36
+2024-11-27 09:58:40,921 - lanedet.utils.recorder - INFO - epoch: 89  step: 40507  lr: 0.0000  loss: 10.1586  cls_loss: 0.0059  reg_loss: 10.0993  data: 0.0331  batch: 0.2272  eta: 0:19:12
+2024-11-27 09:59:04,266 - lanedet.utils.recorder - INFO - epoch: 89  step: 40607  lr: 0.0000  loss: 0.8585  cls_loss: 0.0053  reg_loss: 0.8052  data: 0.0326  batch: 0.2376  eta: 0:18:47
+2024-11-27 09:59:27,589 - lanedet.utils.recorder - INFO - epoch: 89  step: 40707  lr: 0.0000  loss: 0.9965  cls_loss: 0.0144  reg_loss: 0.8530  data: 0.0340  batch: 0.2330  eta: 0:18:22
+2024-11-27 09:59:51,084 - lanedet.utils.recorder - INFO - epoch: 89  step: 40807  lr: 0.0000  loss: 0.9147  cls_loss: 0.0064  reg_loss: 0.8507  data: 0.0331  batch: 0.2401  eta: 0:17:58
+2024-11-27 10:00:03,119 - lanedet.utils.recorder - INFO - epoch: 89  step: 40860  lr: 0.0000  loss: 0.9179  cls_loss: 0.0047  reg_loss: 0.8714  data: 0.0353  batch: 0.2111  eta: 0:17:44
+2024-11-27 10:01:05,657 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9549746884735134, "order": "desc"}, {"name": "FP", "value": 0.04007308890486477, "order": "asc"}, {"name": "FN", "value": 0.031002875629043868, "order": "asc"}]
+2024-11-27 10:01:05,658 - lanedet.utils.recorder - INFO - 0.9549746884735134
+2024-11-27 10:01:05,658 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:01:08,689 - lanedet.utils.recorder - INFO - epoch: 90  step: 40861  lr: 0.0000  loss: 0.9341  cls_loss: 0.0054  reg_loss: 0.8798  data: 0.1712  batch: 0.3480  eta: 0:17:45
+2024-11-27 10:01:32,088 - lanedet.utils.recorder - INFO - epoch: 90  step: 40961  lr: 0.0000  loss: 0.9094  cls_loss: 0.0060  reg_loss: 0.8496  data: 0.0335  batch: 0.2381  eta: 0:17:20
+2024-11-27 10:01:55,497 - lanedet.utils.recorder - INFO - epoch: 90  step: 41061  lr: 0.0000  loss: 0.9107  cls_loss: 0.0055  reg_loss: 0.8558  data: 0.0333  batch: 0.2349  eta: 0:16:55
+2024-11-27 10:02:18,676 - lanedet.utils.recorder - INFO - epoch: 90  step: 41161  lr: 0.0000  loss: 0.8439  cls_loss: 0.0046  reg_loss: 0.7976  data: 0.0339  batch: 0.2303  eta: 0:16:31
+2024-11-27 10:02:42,152 - lanedet.utils.recorder - INFO - epoch: 90  step: 41261  lr: 0.0000  loss: 0.8897  cls_loss: 0.0047  reg_loss: 0.8430  data: 0.0331  batch: 0.2330  eta: 0:16:06
+2024-11-27 10:02:53,995 - lanedet.utils.recorder - INFO - epoch: 90  step: 41314  lr: 0.0000  loss: 0.9344  cls_loss: 0.0077  reg_loss: 0.8578  data: 0.0337  batch: 0.2155  eta: 0:15:53
+2024-11-27 10:03:56,474 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9546767484851545, "order": "desc"}, {"name": "FP", "value": 0.039791516894320804, "order": "asc"}, {"name": "FN", "value": 0.03133237479031873, "order": "asc"}]
+2024-11-27 10:03:56,475 - lanedet.utils.recorder - INFO - 0.9546767484851545
+2024-11-27 10:03:56,476 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:03:59,828 - lanedet.utils.recorder - INFO - epoch: 91  step: 41315  lr: 0.0000  loss: 0.9346  cls_loss: 0.0078  reg_loss: 0.8570  data: 0.1834  batch: 0.3684  eta: 0:15:53
+2024-11-27 10:04:22,948 - lanedet.utils.recorder - INFO - epoch: 91  step: 41415  lr: 0.0000  loss: 0.9663  cls_loss: 0.0064  reg_loss: 0.9027  data: 0.0327  batch: 0.2313  eta: 0:15:28
+2024-11-27 10:04:46,224 - lanedet.utils.recorder - INFO - epoch: 91  step: 41515  lr: 0.0000  loss: 0.8849  cls_loss: 0.0045  reg_loss: 0.8403  data: 0.0336  batch: 0.2319  eta: 0:15:04
+2024-11-27 10:05:09,458 - lanedet.utils.recorder - INFO - epoch: 91  step: 41615  lr: 0.0000  loss: 0.9026  cls_loss: 0.0081  reg_loss: 0.8214  data: 0.0327  batch: 0.2300  eta: 0:14:39
+2024-11-27 10:05:32,668 - lanedet.utils.recorder - INFO - epoch: 91  step: 41715  lr: 0.0000  loss: 0.8805  cls_loss: 0.0048  reg_loss: 0.8323  data: 0.0324  batch: 0.2264  eta: 0:14:14
+2024-11-27 10:05:44,624 - lanedet.utils.recorder - INFO - epoch: 91  step: 41768  lr: 0.0000  loss: 0.8905  cls_loss: 0.0083  reg_loss: 0.8070  data: 0.0330  batch: 0.2205  eta: 0:14:01
+2024-11-27 10:06:47,030 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9532325151483978, "order": "desc"}, {"name": "FP", "value": 0.03622693505871092, "order": "asc"}, {"name": "FN", "value": 0.034777138749101336, "order": "asc"}]
+2024-11-27 10:06:47,030 - lanedet.utils.recorder - INFO - 0.9532325151483978
+2024-11-27 10:06:47,031 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:06:50,251 - lanedet.utils.recorder - INFO - epoch: 92  step: 41769  lr: 0.0000  loss: 0.9198  cls_loss: 0.0083  reg_loss: 0.8368  data: 0.1751  batch: 0.3656  eta: 0:14:01
+2024-11-27 10:07:13,692 - lanedet.utils.recorder - INFO - epoch: 92  step: 41869  lr: 0.0000  loss: 0.8872  cls_loss: 0.0061  reg_loss: 0.8266  data: 0.0319  batch: 0.2334  eta: 0:13:37
+2024-11-27 10:07:37,051 - lanedet.utils.recorder - INFO - epoch: 92  step: 41969  lr: 0.0000  loss: 0.9094  cls_loss: 0.0068  reg_loss: 0.8409  data: 0.0332  batch: 0.2345  eta: 0:13:12
+2024-11-27 10:08:00,527 - lanedet.utils.recorder - INFO - epoch: 92  step: 42069  lr: 0.0000  loss: 0.8362  cls_loss: 0.0050  reg_loss: 0.7862  data: 0.0335  batch: 0.2392  eta: 0:12:47
+2024-11-27 10:08:24,066 - lanedet.utils.recorder - INFO - epoch: 92  step: 42169  lr: 0.0000  loss: 0.8817  cls_loss: 0.0054  reg_loss: 0.8273  data: 0.0323  batch: 0.2345  eta: 0:12:23
+2024-11-27 10:08:36,229 - lanedet.utils.recorder - INFO - epoch: 92  step: 42222  lr: 0.0000  loss: 0.8953  cls_loss: 0.0067  reg_loss: 0.8285  data: 0.0335  batch: 0.2204  eta: 0:12:10
+2024-11-27 10:09:38,405 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9547291688062656, "order": "desc"}, {"name": "FP", "value": 0.037946321591181574, "order": "asc"}, {"name": "FN", "value": 0.03166187395159359, "order": "asc"}]
+2024-11-27 10:09:38,406 - lanedet.utils.recorder - INFO - 0.9547291688062656
+2024-11-27 10:09:38,406 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:09:41,197 - lanedet.utils.recorder - INFO - epoch: 93  step: 42223  lr: 0.0000  loss: 0.9000  cls_loss: 0.0068  reg_loss: 0.8317  data: 0.1565  batch: 0.3449  eta: 0:12:10
+2024-11-27 10:10:04,620 - lanedet.utils.recorder - INFO - epoch: 93  step: 42323  lr: 0.0000  loss: 0.9059  cls_loss: 0.0046  reg_loss: 0.8598  data: 0.0328  batch: 0.2314  eta: 0:11:45
+2024-11-27 10:10:28,146 - lanedet.utils.recorder - INFO - epoch: 93  step: 42423  lr: 0.0000  loss: 0.9209  cls_loss: 0.0063  reg_loss: 0.8580  data: 0.0317  batch: 0.2331  eta: 0:11:20
+2024-11-27 10:10:51,216 - lanedet.utils.recorder - INFO - epoch: 93  step: 42523  lr: 0.0000  loss: 4.6661  cls_loss: 0.0074  reg_loss: 4.5917  data: 0.0334  batch: 0.2255  eta: 0:10:56
+2024-11-27 10:11:14,822 - lanedet.utils.recorder - INFO - epoch: 93  step: 42623  lr: 0.0000  loss: 0.8567  cls_loss: 0.0054  reg_loss: 0.8027  data: 0.0343  batch: 0.2284  eta: 0:10:31
+2024-11-27 10:11:26,918 - lanedet.utils.recorder - INFO - epoch: 93  step: 42676  lr: 0.0000  loss: 0.9319  cls_loss: 0.0093  reg_loss: 0.8394  data: 0.0328  batch: 0.2251  eta: 0:10:18
+2024-11-27 10:12:29,691 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9538289300263536, "order": "desc"}, {"name": "FP", "value": 0.036658279415288916, "order": "asc"}, {"name": "FN", "value": 0.033369278696381496, "order": "asc"}]
+2024-11-27 10:12:29,691 - lanedet.utils.recorder - INFO - 0.9538289300263536
+2024-11-27 10:12:29,692 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:12:33,160 - lanedet.utils.recorder - INFO - epoch: 94  step: 42677  lr: 0.0000  loss: 0.9526  cls_loss: 0.0102  reg_loss: 0.8507  data: 0.1865  batch: 0.3838  eta: 0:10:18
+2024-11-27 10:12:56,672 - lanedet.utils.recorder - INFO - epoch: 94  step: 42777  lr: 0.0000  loss: 0.9340  cls_loss: 0.0080  reg_loss: 0.8535  data: 0.0333  batch: 0.2392  eta: 0:09:54
+2024-11-27 10:13:20,060 - lanedet.utils.recorder - INFO - epoch: 94  step: 42877  lr: 0.0000  loss: 0.9927  cls_loss: 0.0064  reg_loss: 0.9288  data: 0.0326  batch: 0.2329  eta: 0:09:29
+2024-11-27 10:13:43,399 - lanedet.utils.recorder - INFO - epoch: 94  step: 42977  lr: 0.0000  loss: 6.2883  cls_loss: 0.0087  reg_loss: 6.2018  data: 0.0329  batch: 0.2374  eta: 0:09:04
+2024-11-27 10:14:06,619 - lanedet.utils.recorder - INFO - epoch: 94  step: 43077  lr: 0.0000  loss: 0.9166  cls_loss: 0.0071  reg_loss: 0.8454  data: 0.0337  batch: 0.2309  eta: 0:08:40
+2024-11-27 10:14:18,756 - lanedet.utils.recorder - INFO - epoch: 94  step: 43130  lr: 0.0000  loss: 0.9414  cls_loss: 0.0063  reg_loss: 0.8788  data: 0.0329  batch: 0.2224  eta: 0:08:27
+2024-11-27 10:15:21,598 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9548575451028668, "order": "desc"}, {"name": "FP", "value": 0.039150491253295165, "order": "asc"}, {"name": "FN", "value": 0.031062784567457473, "order": "asc"}]
+2024-11-27 10:15:21,599 - lanedet.utils.recorder - INFO - 0.9548575451028668
+2024-11-27 10:15:21,599 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:15:24,654 - lanedet.utils.recorder - INFO - epoch: 95  step: 43131  lr: 0.0000  loss: 0.9320  cls_loss: 0.0058  reg_loss: 0.8743  data: 0.1698  batch: 0.3601  eta: 0:08:27
+2024-11-27 10:15:48,244 - lanedet.utils.recorder - INFO - epoch: 95  step: 43231  lr: 0.0000  loss: 0.9062  cls_loss: 0.0060  reg_loss: 0.8462  data: 0.0335  batch: 0.2306  eta: 0:08:02
+2024-11-27 10:16:11,233 - lanedet.utils.recorder - INFO - epoch: 95  step: 43331  lr: 0.0000  loss: 0.9394  cls_loss: 0.0095  reg_loss: 0.8446  data: 0.0344  batch: 0.2299  eta: 0:07:38
+2024-11-27 10:16:34,611 - lanedet.utils.recorder - INFO - epoch: 95  step: 43431  lr: 0.0000  loss: 0.8549  cls_loss: 0.0058  reg_loss: 0.7964  data: 0.0328  batch: 0.2312  eta: 0:07:13
+2024-11-27 10:16:57,987 - lanedet.utils.recorder - INFO - epoch: 95  step: 43531  lr: 0.0000  loss: 0.8765  cls_loss: 0.0048  reg_loss: 0.8280  data: 0.0339  batch: 0.2369  eta: 0:06:48
+2024-11-27 10:17:10,181 - lanedet.utils.recorder - INFO - epoch: 95  step: 43584  lr: 0.0000  loss: 0.8998  cls_loss: 0.0055  reg_loss: 0.8452  data: 0.0313  batch: 0.2250  eta: 0:06:35
+2024-11-27 10:18:12,638 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9543574124473595, "order": "desc"}, {"name": "FP", "value": 0.03890486460579936, "order": "asc"}, {"name": "FN", "value": 0.03220105439731608, "order": "asc"}]
+2024-11-27 10:18:12,638 - lanedet.utils.recorder - INFO - 0.9543574124473595
+2024-11-27 10:18:12,639 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:18:15,702 - lanedet.utils.recorder - INFO - epoch: 96  step: 43585  lr: 0.0000  loss: 0.8861  cls_loss: 0.0056  reg_loss: 0.8296  data: 0.1674  batch: 0.3623  eta: 0:06:35
+2024-11-27 10:18:38,875 - lanedet.utils.recorder - INFO - epoch: 96  step: 43685  lr: 0.0000  loss: 0.8745  cls_loss: 0.0029  reg_loss: 0.8454  data: 0.0328  batch: 0.2275  eta: 0:06:11
+2024-11-27 10:19:02,200 - lanedet.utils.recorder - INFO - epoch: 96  step: 43785  lr: 0.0000  loss: 10.0562  cls_loss: 0.0102  reg_loss: 9.9545  data: 0.0323  batch: 0.2303  eta: 0:05:46
+2024-11-27 10:19:25,192 - lanedet.utils.recorder - INFO - epoch: 96  step: 43885  lr: 0.0000  loss: 4.2696  cls_loss: 0.0071  reg_loss: 4.1987  data: 0.0338  batch: 0.2288  eta: 0:05:22
+2024-11-27 10:19:48,567 - lanedet.utils.recorder - INFO - epoch: 96  step: 43985  lr: 0.0000  loss: 0.8885  cls_loss: 0.0047  reg_loss: 0.8419  data: 0.0332  batch: 0.2307  eta: 0:04:57
+2024-11-27 10:20:00,666 - lanedet.utils.recorder - INFO - epoch: 96  step: 44038  lr: 0.0000  loss: 0.8547  cls_loss: 0.0096  reg_loss: 0.7592  data: 0.0325  batch: 0.2217  eta: 0:04:44
+2024-11-27 10:21:03,098 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9550426209304655, "order": "desc"}, {"name": "FP", "value": 0.038713156002875795, "order": "asc"}, {"name": "FN", "value": 0.030703330936975814, "order": "asc"}]
+2024-11-27 10:21:03,098 - lanedet.utils.recorder - INFO - 0.9550426209304655
+2024-11-27 10:21:03,099 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:21:06,203 - lanedet.utils.recorder - INFO - epoch: 97  step: 44039  lr: 0.0000  loss: 0.8740  cls_loss: 0.0101  reg_loss: 0.7728  data: 0.1686  batch: 0.3618  eta: 0:04:44
+2024-11-27 10:21:29,635 - lanedet.utils.recorder - INFO - epoch: 97  step: 44139  lr: 0.0000  loss: 0.8576  cls_loss: 0.0042  reg_loss: 0.8157  data: 0.0326  batch: 0.2345  eta: 0:04:19
+2024-11-27 10:21:52,756 - lanedet.utils.recorder - INFO - epoch: 97  step: 44239  lr: 0.0000  loss: 0.9754  cls_loss: 0.0045  reg_loss: 0.9308  data: 0.0336  batch: 0.2328  eta: 0:03:55
+2024-11-27 10:22:16,038 - lanedet.utils.recorder - INFO - epoch: 97  step: 44339  lr: 0.0000  loss: 0.8289  cls_loss: 0.0036  reg_loss: 0.7933  data: 0.0330  batch: 0.2358  eta: 0:03:30
+2024-11-27 10:22:39,505 - lanedet.utils.recorder - INFO - epoch: 97  step: 44439  lr: 0.0000  loss: 0.9167  cls_loss: 0.0067  reg_loss: 0.8493  data: 0.0319  batch: 0.2352  eta: 0:03:06
+2024-11-27 10:22:51,550 - lanedet.utils.recorder - INFO - epoch: 97  step: 44492  lr: 0.0000  loss: 0.8939  cls_loss: 0.0041  reg_loss: 0.8528  data: 0.0344  batch: 0.2212  eta: 0:02:53
+2024-11-27 10:23:54,277 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9547029586457105, "order": "desc"}, {"name": "FP", "value": 0.03900670980110249, "order": "asc"}, {"name": "FN", "value": 0.03181164629762761, "order": "asc"}]
+2024-11-27 10:23:54,278 - lanedet.utils.recorder - INFO - 0.9547029586457105
+2024-11-27 10:23:54,278 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:23:57,145 - lanedet.utils.recorder - INFO - epoch: 98  step: 44493  lr: 0.0000  loss: 0.9048  cls_loss: 0.0042  reg_loss: 0.8633  data: 0.1595  batch: 0.3484  eta: 0:02:53
+2024-11-27 10:24:20,520 - lanedet.utils.recorder - INFO - epoch: 98  step: 44593  lr: 0.0000  loss: 0.9307  cls_loss: 0.0047  reg_loss: 0.8836  data: 0.0335  batch: 0.2352  eta: 0:02:28
+2024-11-27 10:24:43,747 - lanedet.utils.recorder - INFO - epoch: 98  step: 44693  lr: 0.0000  loss: 0.8369  cls_loss: 0.0039  reg_loss: 0.7980  data: 0.0318  batch: 0.2349  eta: 0:02:04
+2024-11-27 10:25:07,278 - lanedet.utils.recorder - INFO - epoch: 98  step: 44793  lr: 0.0000  loss: 0.8729  cls_loss: 0.0047  reg_loss: 0.8258  data: 0.0338  batch: 0.2442  eta: 0:01:39
+2024-11-27 10:25:30,862 - lanedet.utils.recorder - INFO - epoch: 98  step: 44893  lr: 0.0000  loss: 0.8935  cls_loss: 0.0081  reg_loss: 0.8128  data: 0.0326  batch: 0.2329  eta: 0:01:15
+2024-11-27 10:25:42,834 - lanedet.utils.recorder - INFO - epoch: 98  step: 44946  lr: 0.0000  loss: 0.8418  cls_loss: 0.0047  reg_loss: 0.7950  data: 0.0341  batch: 0.2177  eta: 0:01:02
+2024-11-27 10:26:45,305 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9542584557187312, "order": "desc"}, {"name": "FP", "value": 0.03856937455068313, "order": "asc"}, {"name": "FN", "value": 0.03280014378145219, "order": "asc"}]
+2024-11-27 10:26:45,306 - lanedet.utils.recorder - INFO - 0.9542584557187312
+2024-11-27 10:26:45,307 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
+2024-11-27 10:26:48,120 - lanedet.utils.recorder - INFO - epoch: 99  step: 44947  lr: 0.0000  loss: 0.8502  cls_loss: 0.0048  reg_loss: 0.8023  data: 0.1589  batch: 0.3441  eta: 0:01:01
+2024-11-27 10:27:11,395 - lanedet.utils.recorder - INFO - epoch: 99  step: 45047  lr: 0.0000  loss: 0.8735  cls_loss: 0.0048  reg_loss: 0.8258  data: 0.0303  batch: 0.2277  eta: 0:00:37
+2024-11-27 10:27:34,661 - lanedet.utils.recorder - INFO - epoch: 99  step: 45147  lr: 0.0000  loss: 6.0923  cls_loss: 0.0056  reg_loss: 6.0359  data: 0.0334  batch: 0.2336  eta: 0:00:12
+2024-11-27 10:29:02,518 - lanedet.datasets.base_dataset - INFO - [{"name": "Accuracy", "value": 0.9545200224230542, "order": "desc"}, {"name": "FP", "value": 0.03797627606038837, "order": "asc"}, {"name": "FN", "value": 0.03223100886652289, "order": "asc"}]
+2024-11-27 10:29:02,519 - lanedet.utils.recorder - INFO - 0.9545200224230542
+2024-11-27 10:29:02,520 - lanedet.utils.recorder - INFO - Best metric: 0.9561493315874081
