@@ -1,6 +1,11 @@
 # Disallow
 doc/*
-work_dirs/
+code/
+ckpt/
+driver_37_30frame/
+driver_100_30frame/
+driver_193_90frame/
+
 predicts/
 output/
 data/
