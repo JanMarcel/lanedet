@@ -1,0 +1,434 @@
+2024-12-03 02:49:31,904 - lanedet.utils.recorder - INFO - Training started on: 141.37.157.56
+2024-12-03 02:49:31,904 - lanedet.utils.recorder - INFO - Config: 
+net = dict(
+    type='Detector',
+)
+
+backbone = dict(
+    type='ResNetWrapper',
+    resnet='resnet34',
+    pretrained=True,
+    replace_stride_with_dilation=[False, True, True],
+    out_conv=True,
+    in_channels=[64, 128, 256, -1]
+)
+featuremap_out_channel = 128
+featuremap_out_stride = 8
+sample_y = range(589, 230, -20)
+
+aggregator = dict(
+    type='RESA',
+    direction=['d', 'u', 'r', 'l'],
+    alpha=2.0,
+    iter=4,
+    conv_stride=9,
+)
+
+heads = dict( 
+    type='LaneSeg',
+    decoder=dict(type='PlainDecoder'),
+    exist=dict(type='ExistHead'),
+    thr=0.3,
+    sample_y=sample_y,
+)
+
+trainer = dict(
+    type='RESA'
+)
+
+evaluator = dict(
+    type='CULane',        
+)
+
+optimizer = dict(
+  type = 'SGD',
+  lr = 0.030,
+  weight_decay = 1e-4,
+  momentum = 0.9
+)
+
+epochs = 12
+batch_size = 8
+total_iter = (88880 // batch_size) * epochs
+import math
+scheduler = dict(
+    type = 'LambdaLR',
+    lr_lambda = lambda _iter : math.pow(1 - _iter/total_iter, 0.9)
+)
+
+seg_loss_weight = 1.0
+eval_ep = 6
+save_ep = epochs
+
+bg_weight = 0.4
+
+img_norm = dict(
+    mean=[103.939, 116.779, 123.68],
+    std=[1., 1., 1.]
+)
+
+img_height = 288
+img_width = 800
+cut_height = 240 
+ori_img_h = 590
+ori_img_w = 1640
+
+train_process = [
+    dict(type='RandomRotation', degree=(-2, 2)),
+    dict(type='RandomHorizontalFlip'),
+    dict(type='Resize', size=(img_width, img_height)),
+    dict(type='Normalize', img_norm=img_norm),
+    dict(type='ToTensor', keys=['img', 'mask', 'lane_exist']),
+]
+
+val_process = [
+    dict(type='Resize', size=(img_width, img_height)),
+    dict(type='Normalize', img_norm=img_norm),
+    dict(type='ToTensor', keys=['img']),
+]
+
+dataset_path = './data/CULane'
+dataset = dict(
+    train=dict(
+        type='CULane',
+        data_root=dataset_path,
+        split='train',
+        processes=train_process,
+    ),
+    val=dict(
+        type='CULane',
+        data_root=dataset_path,
+        split='test',
+        processes=val_process,
+    ),
+    test=dict(
+        type='CULane',
+        data_root=dataset_path,
+        split='test',
+        processes=val_process,
+    )
+)
+
+
+workers = 12
+num_classes = 4 + 1
+ignore_label = 255
+log_interval = 1000
+
+lr_update_by_epoch = False
+
+2024-12-03 02:50:14,223 - lanedet.utils.recorder - INFO - Network: 
+MMDataParallel(
+  (module): Detector(
+    (backbone): ResNetWrapper(
+      (model): ResNet(
+        (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+        (layer1): Sequential(
+          (0): BasicBlock(
+            (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (1): BasicBlock(
+            (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (2): BasicBlock(
+            (conv1): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+        )
+        (layer2): Sequential(
+          (0): BasicBlock(
+            (conv1): Conv2d(64, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (downsample): Sequential(
+              (0): Conv2d(64, 128, kernel_size=(1, 1), stride=(2, 2), bias=False)
+              (1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+          )
+          (1): BasicBlock(
+            (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (2): BasicBlock(
+            (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (3): BasicBlock(
+            (conv1): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+        )
+        (layer3): Sequential(
+          (0): BasicBlock(
+            (conv1): Conv2d(128, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (downsample): Sequential(
+              (0): Conv2d(128, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            )
+          )
+          (1): BasicBlock(
+            (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (2): BasicBlock(
+            (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (3): BasicBlock(
+            (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (4): BasicBlock(
+            (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+          (5): BasicBlock(
+            (conv1): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (relu): ReLU(inplace=True)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+            (bn2): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          )
+        )
+      )
+      (out): Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+    )
+    (aggregator): RESA(
+      (conv_d0): Conv2d(128, 128, kernel_size=(1, 9), stride=(1, 1), padding=(0, 4), bias=False)
+      (conv_u0): Conv2d(128, 128, kernel_size=(1, 9), stride=(1, 1), padding=(0, 4), bias=False)
+      (conv_r0): Conv2d(128, 128, kernel_size=(9, 1), stride=(1, 1), padding=(4, 0), bias=False)
+      (conv_l0): Conv2d(128, 128, kernel_size=(9, 1), stride=(1, 1), padding=(4, 0), bias=False)
+      (conv_d1): Conv2d(128, 128, kernel_size=(1, 9), stride=(1, 1), padding=(0, 4), bias=False)
+      (conv_u1): Conv2d(128, 128, kernel_size=(1, 9), stride=(1, 1), padding=(0, 4), bias=False)
+      (conv_r1): Conv2d(128, 128, kernel_size=(9, 1), stride=(1, 1), padding=(4, 0), bias=False)
+      (conv_l1): Conv2d(128, 128, kernel_size=(9, 1), stride=(1, 1), padding=(4, 0), bias=False)
+      (conv_d2): Conv2d(128, 128, kernel_size=(1, 9), stride=(1, 1), padding=(0, 4), bias=False)
+      (conv_u2): Conv2d(128, 128, kernel_size=(1, 9), stride=(1, 1), padding=(0, 4), bias=False)
+      (conv_r2): Conv2d(128, 128, kernel_size=(9, 1), stride=(1, 1), padding=(4, 0), bias=False)
+      (conv_l2): Conv2d(128, 128, kernel_size=(9, 1), stride=(1, 1), padding=(4, 0), bias=False)
+      (conv_d3): Conv2d(128, 128, kernel_size=(1, 9), stride=(1, 1), padding=(0, 4), bias=False)
+      (conv_u3): Conv2d(128, 128, kernel_size=(1, 9), stride=(1, 1), padding=(0, 4), bias=False)
+      (conv_r3): Conv2d(128, 128, kernel_size=(9, 1), stride=(1, 1), padding=(4, 0), bias=False)
+      (conv_l3): Conv2d(128, 128, kernel_size=(9, 1), stride=(1, 1), padding=(4, 0), bias=False)
+    )
+    (heads): LaneSeg(
+      (decoder): PlainDecoder(
+        (dropout): Dropout2d(p=0.1, inplace=False)
+        (conv8): Conv2d(128, 5, kernel_size=(1, 1), stride=(1, 1))
+      )
+      (exist): ExistHead(
+        (dropout): Dropout2d(p=0.1, inplace=False)
+        (conv8): Conv2d(128, 5, kernel_size=(1, 1), stride=(1, 1))
+        (fc9): Linear(in_features=4500, out_features=128, bias=True)
+        (fc10): Linear(in_features=128, out_features=4, bias=True)
+      )
+    )
+  )
+)
+2024-12-03 02:50:14,224 - lanedet.utils.recorder - INFO - Build train loader...
+2024-12-03 02:50:14,224 - lanedet.datasets.base_dataset - INFO - Loading CULane annotations...
+2024-12-03 02:52:10,703 - lanedet.utils.recorder - INFO - Start training...
+2024-12-03 02:52:16,763 - lanedet.utils.recorder - INFO - epoch: 0  step: 1  lr: 0.0000  seg_loss: 22.6390  exist_loss: 0.0556  data: 4.0073  batch: 6.0592  eta: 9 days, 8:23:26
+2024-12-03 02:57:20,211 - lanedet.utils.recorder - INFO - epoch: 0  step: 1001  lr: 0.0060  seg_loss: 0.2751  exist_loss: 0.0526  data: 0.1541  batch: 0.3109  eta: 11:21:32
+2024-12-03 03:02:32,761 - lanedet.utils.recorder - INFO - epoch: 0  step: 2001  lr: 0.0118  seg_loss: 0.2019  exist_loss: 0.0549  data: 0.1560  batch: 0.3137  eta: 11:20:13
+2024-12-03 03:07:45,387 - lanedet.utils.recorder - INFO - epoch: 0  step: 3001  lr: 0.0176  seg_loss: 0.1928  exist_loss: 0.0503  data: 0.1555  batch: 0.3131  eta: 11:16:22
+2024-12-03 03:12:56,321 - lanedet.utils.recorder - INFO - epoch: 0  step: 4001  lr: 0.0234  seg_loss: 0.1698  exist_loss: 0.0499  data: 0.1551  batch: 0.3119  eta: 11:10:55
+2024-12-03 03:18:07,315 - lanedet.utils.recorder - INFO - epoch: 0  step: 5001  lr: 0.0290  seg_loss: 0.1605  exist_loss: 0.0442  data: 0.1551  batch: 0.3113  eta: 11:05:36
+2024-12-03 03:23:18,695 - lanedet.utils.recorder - INFO - epoch: 0  step: 6001  lr: 0.0288  seg_loss: 0.1410  exist_loss: 0.0460  data: 0.1545  batch: 0.3099  eta: 11:00:28
+2024-12-03 03:28:29,460 - lanedet.utils.recorder - INFO - epoch: 0  step: 7001  lr: 0.0286  seg_loss: 0.1414  exist_loss: 0.0425  data: 0.1543  batch: 0.3097  eta: 10:55:08
+2024-12-03 03:33:40,537 - lanedet.utils.recorder - INFO - epoch: 0  step: 8001  lr: 0.0284  seg_loss: 0.1520  exist_loss: 0.0449  data: 0.1566  batch: 0.3125  eta: 10:49:55
+2024-12-03 03:38:51,382 - lanedet.utils.recorder - INFO - epoch: 0  step: 9001  lr: 0.0282  seg_loss: 0.1391  exist_loss: 0.0424  data: 0.1536  batch: 0.3109  eta: 10:44:39
+2024-12-03 03:44:02,112 - lanedet.utils.recorder - INFO - epoch: 0  step: 10001  lr: 0.0280  seg_loss: 0.1565  exist_loss: 0.0455  data: 0.1551  batch: 0.3113  eta: 10:39:23
+2024-12-03 03:49:13,015 - lanedet.utils.recorder - INFO - epoch: 0  step: 11001  lr: 0.0278  seg_loss: 0.1343  exist_loss: 0.0459  data: 0.1545  batch: 0.3107  eta: 10:34:10
+2024-12-03 03:49:46,886 - lanedet.utils.recorder - INFO - epoch: 0  step: 11110  lr: 0.0277  seg_loss: 0.1314  exist_loss: 0.0469  data: 0.1556  batch: 0.3092  eta: 10:33:36
+2024-12-03 03:49:51,296 - lanedet.utils.recorder - INFO - epoch: 1  step: 11111  lr: 0.0277  seg_loss: 0.1302  exist_loss: 0.0468  data: 0.3444  batch: 0.4984  eta: 10:34:17
+2024-12-03 03:55:01,637 - lanedet.utils.recorder - INFO - epoch: 1  step: 12111  lr: 0.0275  seg_loss: 0.1328  exist_loss: 0.0440  data: 0.1540  batch: 0.3112  eta: 10:28:55
+2024-12-03 04:00:12,274 - lanedet.utils.recorder - INFO - epoch: 1  step: 13111  lr: 0.0273  seg_loss: 0.1306  exist_loss: 0.0433  data: 0.1556  batch: 0.3121  eta: 10:23:37
+2024-12-03 04:05:22,919 - lanedet.utils.recorder - INFO - epoch: 1  step: 14111  lr: 0.0271  seg_loss: 0.1443  exist_loss: 0.0445  data: 0.1553  batch: 0.3112  eta: 10:18:21
+2024-12-03 04:10:33,937 - lanedet.utils.recorder - INFO - epoch: 1  step: 15111  lr: 0.0269  seg_loss: 0.1332  exist_loss: 0.0442  data: 0.1538  batch: 0.3107  eta: 10:13:08
+2024-12-03 04:15:44,703 - lanedet.utils.recorder - INFO - epoch: 1  step: 16111  lr: 0.0267  seg_loss: 0.1240  exist_loss: 0.0427  data: 0.1558  batch: 0.3117  eta: 10:07:53
+2024-12-03 04:20:55,591 - lanedet.utils.recorder - INFO - epoch: 1  step: 17111  lr: 0.0265  seg_loss: 0.1105  exist_loss: 0.0428  data: 0.1550  batch: 0.3100  eta: 10:02:40
+2024-12-03 04:26:06,559 - lanedet.utils.recorder - INFO - epoch: 1  step: 18111  lr: 0.0263  seg_loss: 0.1404  exist_loss: 0.0423  data: 0.1564  batch: 0.3122  eta: 9:57:28
+2024-12-03 04:31:17,497 - lanedet.utils.recorder - INFO - epoch: 1  step: 19111  lr: 0.0261  seg_loss: 0.1349  exist_loss: 0.0403  data: 0.1560  batch: 0.3114  eta: 9:52:15
+2024-12-03 04:36:28,545 - lanedet.utils.recorder - INFO - epoch: 1  step: 20111  lr: 0.0259  seg_loss: 0.1070  exist_loss: 0.0409  data: 0.1550  batch: 0.3111  eta: 9:47:03
+2024-12-03 04:41:39,287 - lanedet.utils.recorder - INFO - epoch: 1  step: 21111  lr: 0.0257  seg_loss: 0.1082  exist_loss: 0.0446  data: 0.1525  batch: 0.3094  eta: 9:41:50
+2024-12-03 04:46:50,314 - lanedet.utils.recorder - INFO - epoch: 1  step: 22111  lr: 0.0255  seg_loss: 0.1136  exist_loss: 0.0425  data: 0.1546  batch: 0.3105  eta: 9:36:39
+2024-12-03 04:47:24,147 - lanedet.utils.recorder - INFO - epoch: 1  step: 22220  lr: 0.0255  seg_loss: 0.1188  exist_loss: 0.0433  data: 0.1563  batch: 0.3085  eta: 9:36:04
+2024-12-03 04:47:28,221 - lanedet.utils.recorder - INFO - epoch: 2  step: 22221  lr: 0.0255  seg_loss: 0.1190  exist_loss: 0.0434  data: 0.3293  batch: 0.4818  eta: 9:36:21
+2024-12-03 04:52:38,380 - lanedet.utils.recorder - INFO - epoch: 2  step: 23221  lr: 0.0253  seg_loss: 0.1209  exist_loss: 0.0438  data: 0.1538  batch: 0.3110  eta: 9:31:05
+2024-12-03 04:57:49,198 - lanedet.utils.recorder - INFO - epoch: 2  step: 24221  lr: 0.0250  seg_loss: 0.1168  exist_loss: 0.0446  data: 0.1535  batch: 0.3103  eta: 9:25:52
+2024-12-03 05:02:59,787 - lanedet.utils.recorder - INFO - epoch: 2  step: 25221  lr: 0.0248  seg_loss: 0.1279  exist_loss: 0.0407  data: 0.1542  batch: 0.3105  eta: 9:20:38
+2024-12-03 05:08:10,654 - lanedet.utils.recorder - INFO - epoch: 2  step: 26221  lr: 0.0246  seg_loss: 0.1138  exist_loss: 0.0435  data: 0.1549  batch: 0.3101  eta: 9:15:25
+2024-12-03 05:13:21,172 - lanedet.utils.recorder - INFO - epoch: 2  step: 27221  lr: 0.0244  seg_loss: 0.1039  exist_loss: 0.0446  data: 0.1545  batch: 0.3108  eta: 9:10:12
+2024-12-03 05:18:31,962 - lanedet.utils.recorder - INFO - epoch: 2  step: 28221  lr: 0.0242  seg_loss: 0.1234  exist_loss: 0.0417  data: 0.1546  batch: 0.3103  eta: 9:04:59
+2024-12-03 05:23:42,574 - lanedet.utils.recorder - INFO - epoch: 2  step: 29221  lr: 0.0240  seg_loss: 0.0991  exist_loss: 0.0433  data: 0.1542  batch: 0.3108  eta: 8:59:46
+2024-12-03 05:28:53,281 - lanedet.utils.recorder - INFO - epoch: 2  step: 30221  lr: 0.0238  seg_loss: 0.1257  exist_loss: 0.0429  data: 0.1548  batch: 0.3118  eta: 8:54:34
+2024-12-03 05:34:03,998 - lanedet.utils.recorder - INFO - epoch: 2  step: 31221  lr: 0.0236  seg_loss: 0.1160  exist_loss: 0.0435  data: 0.1544  batch: 0.3111  eta: 8:49:21
+2024-12-03 05:39:14,872 - lanedet.utils.recorder - INFO - epoch: 2  step: 32221  lr: 0.0234  seg_loss: 0.1175  exist_loss: 0.0419  data: 0.1541  batch: 0.3108  eta: 8:44:10
+2024-12-03 05:44:25,346 - lanedet.utils.recorder - INFO - epoch: 2  step: 33221  lr: 0.0232  seg_loss: 0.1190  exist_loss: 0.0420  data: 0.1523  batch: 0.3100  eta: 8:38:57
+2024-12-03 05:44:59,148 - lanedet.utils.recorder - INFO - epoch: 2  step: 33330  lr: 0.0232  seg_loss: 0.1118  exist_loss: 0.0413  data: 0.1561  batch: 0.3083  eta: 8:38:22
+2024-12-03 05:45:03,670 - lanedet.utils.recorder - INFO - epoch: 3  step: 33331  lr: 0.0232  seg_loss: 0.1095  exist_loss: 0.0410  data: 0.3503  batch: 0.5029  eta: 8:38:34
+2024-12-03 05:50:13,764 - lanedet.utils.recorder - INFO - epoch: 3  step: 34331  lr: 0.0229  seg_loss: 0.1104  exist_loss: 0.0417  data: 0.1560  batch: 0.3114  eta: 8:33:19
+2024-12-03 05:55:24,475 - lanedet.utils.recorder - INFO - epoch: 3  step: 35331  lr: 0.0227  seg_loss: 0.1076  exist_loss: 0.0422  data: 0.1550  batch: 0.3102  eta: 8:28:07
+2024-12-03 06:00:35,099 - lanedet.utils.recorder - INFO - epoch: 3  step: 36331  lr: 0.0225  seg_loss: 0.1062  exist_loss: 0.0440  data: 0.1538  batch: 0.3106  eta: 8:22:55
+2024-12-03 06:05:45,817 - lanedet.utils.recorder - INFO - epoch: 3  step: 37331  lr: 0.0223  seg_loss: 0.1193  exist_loss: 0.0418  data: 0.1534  batch: 0.3114  eta: 8:17:42
+2024-12-03 06:10:56,389 - lanedet.utils.recorder - INFO - epoch: 3  step: 38331  lr: 0.0221  seg_loss: 0.1181  exist_loss: 0.0414  data: 0.1538  batch: 0.3105  eta: 8:12:30
+2024-12-03 06:16:06,945 - lanedet.utils.recorder - INFO - epoch: 3  step: 39331  lr: 0.0219  seg_loss: 0.1146  exist_loss: 0.0418  data: 0.1542  batch: 0.3103  eta: 8:07:18
+2024-12-03 06:21:17,637 - lanedet.utils.recorder - INFO - epoch: 3  step: 40331  lr: 0.0217  seg_loss: 0.1295  exist_loss: 0.0442  data: 0.1542  batch: 0.3114  eta: 8:02:06
+2024-12-03 06:26:28,258 - lanedet.utils.recorder - INFO - epoch: 3  step: 41331  lr: 0.0215  seg_loss: 0.1144  exist_loss: 0.0430  data: 0.1551  batch: 0.3103  eta: 7:56:54
+2024-12-03 06:31:38,888 - lanedet.utils.recorder - INFO - epoch: 3  step: 42331  lr: 0.0213  seg_loss: 0.1060  exist_loss: 0.0413  data: 0.1552  batch: 0.3114  eta: 7:51:42
+2024-12-03 06:36:49,552 - lanedet.utils.recorder - INFO - epoch: 3  step: 43331  lr: 0.0211  seg_loss: 0.1055  exist_loss: 0.0421  data: 0.1540  batch: 0.3101  eta: 7:46:30
+2024-12-03 06:42:00,314 - lanedet.utils.recorder - INFO - epoch: 3  step: 44331  lr: 0.0209  seg_loss: 0.1027  exist_loss: 0.0421  data: 0.1549  batch: 0.3107  eta: 7:41:18
+2024-12-03 06:42:34,181 - lanedet.utils.recorder - INFO - epoch: 3  step: 44440  lr: 0.0208  seg_loss: 0.1219  exist_loss: 0.0426  data: 0.1568  batch: 0.3098  eta: 7:40:44
+2024-12-03 06:42:38,572 - lanedet.utils.recorder - INFO - epoch: 4  step: 44441  lr: 0.0208  seg_loss: 0.1231  exist_loss: 0.0421  data: 0.3449  batch: 0.4985  eta: 7:40:51
+2024-12-03 06:47:48,699 - lanedet.utils.recorder - INFO - epoch: 4  step: 45441  lr: 0.0206  seg_loss: 0.1062  exist_loss: 0.0425  data: 0.1545  batch: 0.3101  eta: 7:35:38
+2024-12-03 06:52:59,305 - lanedet.utils.recorder - INFO - epoch: 4  step: 46441  lr: 0.0204  seg_loss: 0.1099  exist_loss: 0.0437  data: 0.1528  batch: 0.3101  eta: 7:30:26
+2024-12-03 06:58:10,093 - lanedet.utils.recorder - INFO - epoch: 4  step: 47441  lr: 0.0202  seg_loss: 0.1096  exist_loss: 0.0426  data: 0.1531  batch: 0.3099  eta: 7:25:15
+2024-12-03 07:03:20,510 - lanedet.utils.recorder - INFO - epoch: 4  step: 48441  lr: 0.0200  seg_loss: 0.1003  exist_loss: 0.0440  data: 0.1548  batch: 0.3106  eta: 7:20:02
+2024-12-03 07:08:31,149 - lanedet.utils.recorder - INFO - epoch: 4  step: 49441  lr: 0.0198  seg_loss: 0.1048  exist_loss: 0.0422  data: 0.1534  batch: 0.3106  eta: 7:14:51
+2024-12-03 07:13:41,624 - lanedet.utils.recorder - INFO - epoch: 4  step: 50441  lr: 0.0196  seg_loss: 0.0966  exist_loss: 0.0427  data: 0.1537  batch: 0.3097  eta: 7:09:39
+2024-12-03 07:18:52,184 - lanedet.utils.recorder - INFO - epoch: 4  step: 51441  lr: 0.0193  seg_loss: 0.1186  exist_loss: 0.0428  data: 0.1528  batch: 0.3105  eta: 7:04:27
+2024-12-03 07:24:02,607 - lanedet.utils.recorder - INFO - epoch: 4  step: 52441  lr: 0.0191  seg_loss: 0.1142  exist_loss: 0.0418  data: 0.1540  batch: 0.3115  eta: 6:59:15
+2024-12-03 07:29:13,076 - lanedet.utils.recorder - INFO - epoch: 4  step: 53441  lr: 0.0189  seg_loss: 0.1066  exist_loss: 0.0424  data: 0.1539  batch: 0.3102  eta: 6:54:03
+2024-12-03 07:34:23,543 - lanedet.utils.recorder - INFO - epoch: 4  step: 54441  lr: 0.0187  seg_loss: 0.1108  exist_loss: 0.0435  data: 0.1550  batch: 0.3114  eta: 6:48:51
+2024-12-03 07:39:34,074 - lanedet.utils.recorder - INFO - epoch: 4  step: 55441  lr: 0.0185  seg_loss: 0.1125  exist_loss: 0.0413  data: 0.1533  batch: 0.3095  eta: 6:43:40
+2024-12-03 07:40:07,847 - lanedet.utils.recorder - INFO - epoch: 4  step: 55550  lr: 0.0185  seg_loss: 0.1052  exist_loss: 0.0425  data: 0.1531  batch: 0.3082  eta: 6:43:05
+2024-12-03 07:40:12,300 - lanedet.utils.recorder - INFO - epoch: 5  step: 55551  lr: 0.0185  seg_loss: 0.1067  exist_loss: 0.0422  data: 0.3450  batch: 0.5005  eta: 6:43:11
+2024-12-03 07:45:22,417 - lanedet.utils.recorder - INFO - epoch: 5  step: 56551  lr: 0.0183  seg_loss: 0.1093  exist_loss: 0.0432  data: 0.1536  batch: 0.3089  eta: 6:37:58
+2024-12-03 07:50:33,104 - lanedet.utils.recorder - INFO - epoch: 5  step: 57551  lr: 0.0180  seg_loss: 0.1086  exist_loss: 0.0452  data: 0.1547  batch: 0.3113  eta: 6:32:47
+2024-12-03 07:55:43,778 - lanedet.utils.recorder - INFO - epoch: 5  step: 58551  lr: 0.0178  seg_loss: 0.1110  exist_loss: 0.0440  data: 0.1535  batch: 0.3101  eta: 6:27:35
+2024-12-03 08:00:54,358 - lanedet.utils.recorder - INFO - epoch: 5  step: 59551  lr: 0.0176  seg_loss: 0.1058  exist_loss: 0.0418  data: 0.1549  batch: 0.3104  eta: 6:22:24
+2024-12-03 08:06:05,010 - lanedet.utils.recorder - INFO - epoch: 5  step: 60551  lr: 0.0174  seg_loss: 0.0998  exist_loss: 0.0421  data: 0.1539  batch: 0.3100  eta: 6:17:12
+2024-12-03 08:11:15,592 - lanedet.utils.recorder - INFO - epoch: 5  step: 61551  lr: 0.0172  seg_loss: 0.0969  exist_loss: 0.0426  data: 0.1534  batch: 0.3103  eta: 6:12:01
+2024-12-03 08:16:26,008 - lanedet.utils.recorder - INFO - epoch: 5  step: 62551  lr: 0.0170  seg_loss: 0.0945  exist_loss: 0.0421  data: 0.1525  batch: 0.3092  eta: 6:06:49
+2024-12-03 08:21:36,435 - lanedet.utils.recorder - INFO - epoch: 5  step: 63551  lr: 0.0167  seg_loss: 0.1016  exist_loss: 0.0410  data: 0.1550  batch: 0.3108  eta: 6:01:37
+2024-12-03 08:26:46,893 - lanedet.utils.recorder - INFO - epoch: 5  step: 64551  lr: 0.0165  seg_loss: 0.1105  exist_loss: 0.0414  data: 0.1534  batch: 0.3106  eta: 5:56:26
+2024-12-03 08:31:57,280 - lanedet.utils.recorder - INFO - epoch: 5  step: 65551  lr: 0.0163  seg_loss: 0.1027  exist_loss: 0.0425  data: 0.1539  batch: 0.3108  eta: 5:51:14
+2024-12-03 08:37:07,888 - lanedet.utils.recorder - INFO - epoch: 5  step: 66551  lr: 0.0161  seg_loss: 0.0907  exist_loss: 0.0405  data: 0.1543  batch: 0.3108  eta: 5:46:03
+2024-12-03 08:37:41,699 - lanedet.utils.recorder - INFO - epoch: 5  step: 66660  lr: 0.0161  seg_loss: 0.1233  exist_loss: 0.0420  data: 0.1518  batch: 0.3084  eta: 5:45:29
+2024-12-03 08:37:41,869 - lanedet.datasets.base_dataset - INFO - Loading CULane annotations...
+2024-12-03 09:01:23,542 - lanedet.datasets.base_dataset - INFO - [{"TP": 75962, "FP": 29110, "FN": 28924, "Precision": 0.7229518806151972, "Recall": 0.7242339301718056, "F1": 0.723592337515122}]
+2024-12-03 09:01:23,542 - lanedet.utils.recorder - INFO - 0.723592337515122
+2024-12-03 09:01:31,252 - lanedet.utils.recorder - INFO - Best metric: 0.723592337515122
+2024-12-03 09:01:35,922 - lanedet.utils.recorder - INFO - epoch: 6  step: 66661  lr: 0.0161  seg_loss: 0.1202  exist_loss: 0.0422  data: 0.3463  batch: 0.5029  eta: 5:45:32
+2024-12-03 09:06:39,835 - lanedet.utils.recorder - INFO - epoch: 6  step: 67661  lr: 0.0159  seg_loss: 0.0856  exist_loss: 0.0431  data: 0.1565  batch: 0.3107  eta: 5:40:14
+2024-12-03 09:11:51,739 - lanedet.utils.recorder - INFO - epoch: 6  step: 68661  lr: 0.0156  seg_loss: 0.1050  exist_loss: 0.0428  data: 0.1557  batch: 0.3114  eta: 5:35:04
+2024-12-03 09:17:02,188 - lanedet.utils.recorder - INFO - epoch: 6  step: 69661  lr: 0.0154  seg_loss: 0.0928  exist_loss: 0.0405  data: 0.1545  batch: 0.3106  eta: 5:29:53
+2024-12-03 09:22:12,704 - lanedet.utils.recorder - INFO - epoch: 6  step: 70661  lr: 0.0152  seg_loss: 0.1045  exist_loss: 0.0427  data: 0.1552  batch: 0.3117  eta: 5:24:42
+2024-12-03 09:27:23,231 - lanedet.utils.recorder - INFO - epoch: 6  step: 71661  lr: 0.0150  seg_loss: 0.0892  exist_loss: 0.0435  data: 0.1534  batch: 0.3092  eta: 5:19:30
+2024-12-03 09:32:33,184 - lanedet.utils.recorder - INFO - epoch: 6  step: 72661  lr: 0.0148  seg_loss: 0.1005  exist_loss: 0.0419  data: 0.1529  batch: 0.3099  eta: 5:14:19
+2024-12-03 09:37:43,429 - lanedet.utils.recorder - INFO - epoch: 6  step: 73661  lr: 0.0145  seg_loss: 0.1028  exist_loss: 0.0426  data: 0.1559  batch: 0.3104  eta: 5:09:07
+2024-12-03 09:42:53,861 - lanedet.utils.recorder - INFO - epoch: 6  step: 74661  lr: 0.0143  seg_loss: 0.1029  exist_loss: 0.0406  data: 0.1542  batch: 0.3098  eta: 5:03:56
+2024-12-03 09:48:04,238 - lanedet.utils.recorder - INFO - epoch: 6  step: 75661  lr: 0.0141  seg_loss: 0.1007  exist_loss: 0.0417  data: 0.1544  batch: 0.3103  eta: 4:58:45
+2024-12-03 09:53:14,531 - lanedet.utils.recorder - INFO - epoch: 6  step: 76661  lr: 0.0139  seg_loss: 0.1089  exist_loss: 0.0420  data: 0.1553  batch: 0.3097  eta: 4:53:33
+2024-12-03 09:58:24,701 - lanedet.utils.recorder - INFO - epoch: 6  step: 77661  lr: 0.0137  seg_loss: 0.0960  exist_loss: 0.0438  data: 0.1555  batch: 0.3110  eta: 4:48:22
+2024-12-03 09:58:58,480 - lanedet.utils.recorder - INFO - epoch: 6  step: 77770  lr: 0.0136  seg_loss: 0.0975  exist_loss: 0.0425  data: 0.1555  batch: 0.3077  eta: 4:47:48
+2024-12-03 09:59:03,243 - lanedet.utils.recorder - INFO - epoch: 7  step: 77771  lr: 0.0136  seg_loss: 0.0981  exist_loss: 0.0428  data: 0.3611  batch: 0.5133  eta: 4:47:51
+2024-12-03 10:04:13,047 - lanedet.utils.recorder - INFO - epoch: 7  step: 78771  lr: 0.0134  seg_loss: 0.0944  exist_loss: 0.0413  data: 0.1542  batch: 0.3099  eta: 4:42:39
+2024-12-03 10:09:23,660 - lanedet.utils.recorder - INFO - epoch: 7  step: 79771  lr: 0.0132  seg_loss: 0.1009  exist_loss: 0.0439  data: 0.1536  batch: 0.3104  eta: 4:37:28
+2024-12-03 10:14:34,465 - lanedet.utils.recorder - INFO - epoch: 7  step: 80771  lr: 0.0130  seg_loss: 0.1020  exist_loss: 0.0430  data: 0.1544  batch: 0.3095  eta: 4:32:17
+2024-12-03 10:19:45,044 - lanedet.utils.recorder - INFO - epoch: 7  step: 81771  lr: 0.0128  seg_loss: 0.0959  exist_loss: 0.0439  data: 0.1547  batch: 0.3099  eta: 4:27:06
+2024-12-03 10:24:55,701 - lanedet.utils.recorder - INFO - epoch: 7  step: 82771  lr: 0.0125  seg_loss: 0.0885  exist_loss: 0.0430  data: 0.1545  batch: 0.3112  eta: 4:21:55
+2024-12-03 10:30:06,596 - lanedet.utils.recorder - INFO - epoch: 7  step: 83771  lr: 0.0123  seg_loss: 0.0974  exist_loss: 0.0433  data: 0.1534  batch: 0.3096  eta: 4:16:44
+2024-12-03 10:35:17,200 - lanedet.utils.recorder - INFO - epoch: 7  step: 84771  lr: 0.0121  seg_loss: 0.0963  exist_loss: 0.0425  data: 0.1550  batch: 0.3102  eta: 4:11:33
+2024-12-03 10:40:27,872 - lanedet.utils.recorder - INFO - epoch: 7  step: 85771  lr: 0.0119  seg_loss: 0.0937  exist_loss: 0.0445  data: 0.1539  batch: 0.3113  eta: 4:06:22
+2024-12-03 10:45:38,509 - lanedet.utils.recorder - INFO - epoch: 7  step: 86771  lr: 0.0116  seg_loss: 0.0983  exist_loss: 0.0397  data: 0.1549  batch: 0.3106  eta: 4:01:11
+2024-12-03 10:50:49,153 - lanedet.utils.recorder - INFO - epoch: 7  step: 87771  lr: 0.0114  seg_loss: 0.0927  exist_loss: 0.0438  data: 0.1555  batch: 0.3111  eta: 3:56:00
+2024-12-03 10:55:59,850 - lanedet.utils.recorder - INFO - epoch: 7  step: 88771  lr: 0.0112  seg_loss: 0.0914  exist_loss: 0.0418  data: 0.1556  batch: 0.3110  eta: 3:50:49
+2024-12-03 10:56:33,671 - lanedet.utils.recorder - INFO - epoch: 7  step: 88880  lr: 0.0112  seg_loss: 0.1091  exist_loss: 0.0432  data: 0.1560  batch: 0.3083  eta: 3:50:15
+2024-12-03 10:56:38,390 - lanedet.utils.recorder - INFO - epoch: 8  step: 88881  lr: 0.0112  seg_loss: 0.1111  exist_loss: 0.0430  data: 0.3600  batch: 0.5125  eta: 3:50:17
+2024-12-03 11:01:48,636 - lanedet.utils.recorder - INFO - epoch: 8  step: 89881  lr: 0.0109  seg_loss: 0.0884  exist_loss: 0.0431  data: 0.1560  batch: 0.3107  eta: 3:45:05
+2024-12-03 11:06:59,243 - lanedet.utils.recorder - INFO - epoch: 8  step: 90881  lr: 0.0107  seg_loss: 0.0820  exist_loss: 0.0427  data: 0.1543  batch: 0.3106  eta: 3:39:54
+2024-12-03 11:12:09,953 - lanedet.utils.recorder - INFO - epoch: 8  step: 91881  lr: 0.0105  seg_loss: 0.0889  exist_loss: 0.0430  data: 0.1559  batch: 0.3109  eta: 3:34:43
+2024-12-03 11:17:20,938 - lanedet.utils.recorder - INFO - epoch: 8  step: 92881  lr: 0.0103  seg_loss: 0.0826  exist_loss: 0.0413  data: 0.1547  batch: 0.3100  eta: 3:29:32
+2024-12-03 11:22:31,888 - lanedet.utils.recorder - INFO - epoch: 8  step: 93881  lr: 0.0100  seg_loss: 0.1104  exist_loss: 0.0435  data: 0.1549  batch: 0.3102  eta: 3:24:22
+2024-12-03 11:27:43,027 - lanedet.utils.recorder - INFO - epoch: 8  step: 94881  lr: 0.0098  seg_loss: 0.0916  exist_loss: 0.0430  data: 0.1553  batch: 0.3119  eta: 3:19:11
+2024-12-03 11:32:54,126 - lanedet.utils.recorder - INFO - epoch: 8  step: 95881  lr: 0.0096  seg_loss: 0.0871  exist_loss: 0.0412  data: 0.1557  batch: 0.3107  eta: 3:14:00
+2024-12-03 11:38:05,017 - lanedet.utils.recorder - INFO - epoch: 8  step: 96881  lr: 0.0093  seg_loss: 0.0839  exist_loss: 0.0411  data: 0.1545  batch: 0.3110  eta: 3:08:49
+2024-12-03 11:43:15,655 - lanedet.utils.recorder - INFO - epoch: 8  step: 97881  lr: 0.0091  seg_loss: 0.0831  exist_loss: 0.0421  data: 0.1534  batch: 0.3095  eta: 3:03:38
+2024-12-03 11:48:26,366 - lanedet.utils.recorder - INFO - epoch: 8  step: 98881  lr: 0.0089  seg_loss: 0.0837  exist_loss: 0.0418  data: 0.1540  batch: 0.3112  eta: 2:58:27
+2024-12-03 11:53:37,161 - lanedet.utils.recorder - INFO - epoch: 8  step: 99881  lr: 0.0086  seg_loss: 0.1023  exist_loss: 0.0421  data: 0.1553  batch: 0.3113  eta: 2:53:16
+2024-12-03 11:54:10,969 - lanedet.utils.recorder - INFO - epoch: 8  step: 99990  lr: 0.0086  seg_loss: 0.0876  exist_loss: 0.0422  data: 0.1559  batch: 0.3081  eta: 2:52:42
+2024-12-03 11:54:15,604 - lanedet.utils.recorder - INFO - epoch: 9  step: 99991  lr: 0.0086  seg_loss: 0.0877  exist_loss: 0.0412  data: 0.3552  batch: 0.5081  eta: 2:52:43
+2024-12-03 11:59:25,604 - lanedet.utils.recorder - INFO - epoch: 9  step: 100991  lr: 0.0084  seg_loss: 0.0882  exist_loss: 0.0412  data: 0.1546  batch: 0.3112  eta: 2:47:32
+2024-12-03 12:04:36,498 - lanedet.utils.recorder - INFO - epoch: 9  step: 101991  lr: 0.0081  seg_loss: 0.0888  exist_loss: 0.0423  data: 0.1572  batch: 0.3110  eta: 2:42:21
+2024-12-03 12:09:47,577 - lanedet.utils.recorder - INFO - epoch: 9  step: 102991  lr: 0.0079  seg_loss: 0.0919  exist_loss: 0.0419  data: 0.1548  batch: 0.3115  eta: 2:37:10
+2024-12-03 12:14:58,682 - lanedet.utils.recorder - INFO - epoch: 9  step: 103991  lr: 0.0077  seg_loss: 0.0978  exist_loss: 0.0407  data: 0.1547  batch: 0.3106  eta: 2:31:59
+2024-12-03 12:20:09,702 - lanedet.utils.recorder - INFO - epoch: 9  step: 104991  lr: 0.0074  seg_loss: 0.0799  exist_loss: 0.0428  data: 0.1544  batch: 0.3122  eta: 2:26:48
+2024-12-03 12:25:20,706 - lanedet.utils.recorder - INFO - epoch: 9  step: 105991  lr: 0.0072  seg_loss: 0.0881  exist_loss: 0.0415  data: 0.1550  batch: 0.3108  eta: 2:21:37
+2024-12-03 12:30:31,779 - lanedet.utils.recorder - INFO - epoch: 9  step: 106991  lr: 0.0070  seg_loss: 0.0827  exist_loss: 0.0410  data: 0.1552  batch: 0.3107  eta: 2:16:26
+2024-12-03 12:35:43,005 - lanedet.utils.recorder - INFO - epoch: 9  step: 107991  lr: 0.0067  seg_loss: 0.0962  exist_loss: 0.0429  data: 0.1547  batch: 0.3120  eta: 2:11:15
+2024-12-03 12:40:54,650 - lanedet.utils.recorder - INFO - epoch: 9  step: 108991  lr: 0.0065  seg_loss: 0.0960  exist_loss: 0.0429  data: 0.1545  batch: 0.3106  eta: 2:06:05
+2024-12-03 12:46:06,472 - lanedet.utils.recorder - INFO - epoch: 9  step: 109991  lr: 0.0062  seg_loss: 0.0783  exist_loss: 0.0415  data: 0.1554  batch: 0.3118  eta: 2:00:54
+2024-12-03 12:51:17,995 - lanedet.utils.recorder - INFO - epoch: 9  step: 110991  lr: 0.0060  seg_loss: 0.0833  exist_loss: 0.0410  data: 0.1553  batch: 0.3115  eta: 1:55:43
+2024-12-03 12:51:51,943 - lanedet.utils.recorder - INFO - epoch: 9  step: 111100  lr: 0.0060  seg_loss: 0.0926  exist_loss: 0.0410  data: 0.1555  batch: 0.3090  eta: 1:55:09
+2024-12-03 12:51:56,509 - lanedet.utils.recorder - INFO - epoch: 10  step: 111101  lr: 0.0060  seg_loss: 0.0923  exist_loss: 0.0414  data: 0.3514  batch: 0.5050  eta: 1:55:10
+2024-12-03 12:57:07,736 - lanedet.utils.recorder - INFO - epoch: 10  step: 112101  lr: 0.0057  seg_loss: 0.0808  exist_loss: 0.0424  data: 0.1564  batch: 0.3123  eta: 1:49:59
+2024-12-03 13:02:18,829 - lanedet.utils.recorder - INFO - epoch: 10  step: 113101  lr: 0.0055  seg_loss: 0.0857  exist_loss: 0.0435  data: 0.1536  batch: 0.3109  eta: 1:44:48
+2024-12-03 13:07:30,532 - lanedet.utils.recorder - INFO - epoch: 10  step: 114101  lr: 0.0052  seg_loss: 0.0708  exist_loss: 0.0431  data: 0.1555  batch: 0.3122  eta: 1:39:37
+2024-12-03 13:12:42,115 - lanedet.utils.recorder - INFO - epoch: 10  step: 115101  lr: 0.0050  seg_loss: 0.0819  exist_loss: 0.0404  data: 0.1558  batch: 0.3115  eta: 1:34:26
+2024-12-03 13:17:53,498 - lanedet.utils.recorder - INFO - epoch: 10  step: 116101  lr: 0.0048  seg_loss: 0.0848  exist_loss: 0.0442  data: 0.1555  batch: 0.3107  eta: 1:29:15
+2024-12-03 13:23:04,967 - lanedet.utils.recorder - INFO - epoch: 10  step: 117101  lr: 0.0045  seg_loss: 0.0847  exist_loss: 0.0431  data: 0.1563  batch: 0.3124  eta: 1:24:04
+2024-12-03 13:28:16,029 - lanedet.utils.recorder - INFO - epoch: 10  step: 118101  lr: 0.0043  seg_loss: 0.0670  exist_loss: 0.0430  data: 0.1565  batch: 0.3110  eta: 1:18:53
+2024-12-03 13:33:27,667 - lanedet.utils.recorder - INFO - epoch: 10  step: 119101  lr: 0.0040  seg_loss: 0.0807  exist_loss: 0.0417  data: 0.1551  batch: 0.3125  eta: 1:13:42
+2024-12-03 13:38:39,212 - lanedet.utils.recorder - INFO - epoch: 10  step: 120101  lr: 0.0037  seg_loss: 0.0768  exist_loss: 0.0407  data: 0.1559  batch: 0.3113  eta: 1:08:31
+2024-12-03 13:43:50,765 - lanedet.utils.recorder - INFO - epoch: 10  step: 121101  lr: 0.0035  seg_loss: 0.0775  exist_loss: 0.0414  data: 0.1545  batch: 0.3106  eta: 1:03:20
+2024-12-03 13:49:02,081 - lanedet.utils.recorder - INFO - epoch: 10  step: 122101  lr: 0.0032  seg_loss: 0.0731  exist_loss: 0.0417  data: 0.1546  batch: 0.3124  eta: 0:58:09
+2024-12-03 13:49:36,013 - lanedet.utils.recorder - INFO - epoch: 10  step: 122210  lr: 0.0032  seg_loss: 0.0700  exist_loss: 0.0422  data: 0.1536  batch: 0.3097  eta: 0:57:35
+2024-12-03 13:49:40,586 - lanedet.utils.recorder - INFO - epoch: 11  step: 122211  lr: 0.0032  seg_loss: 0.0699  exist_loss: 0.0421  data: 0.3495  batch: 0.5055  eta: 0:57:35
+2024-12-03 13:54:51,550 - lanedet.utils.recorder - INFO - epoch: 11  step: 123211  lr: 0.0029  seg_loss: 0.0747  exist_loss: 0.0425  data: 0.1561  batch: 0.3118  eta: 0:52:24
+2024-12-03 14:00:03,129 - lanedet.utils.recorder - INFO - epoch: 11  step: 124211  lr: 0.0027  seg_loss: 0.0755  exist_loss: 0.0406  data: 0.1545  batch: 0.3122  eta: 0:47:13
+2024-12-03 14:05:14,849 - lanedet.utils.recorder - INFO - epoch: 11  step: 125211  lr: 0.0024  seg_loss: 0.0813  exist_loss: 0.0420  data: 0.1576  batch: 0.3130  eta: 0:42:02
+2024-12-03 14:10:26,696 - lanedet.utils.recorder - INFO - epoch: 11  step: 126211  lr: 0.0021  seg_loss: 0.0767  exist_loss: 0.0404  data: 0.1545  batch: 0.3114  eta: 0:36:51
+2024-12-03 14:15:38,201 - lanedet.utils.recorder - INFO - epoch: 11  step: 127211  lr: 0.0019  seg_loss: 0.0874  exist_loss: 0.0422  data: 0.1542  batch: 0.3106  eta: 0:31:40
+2024-12-03 14:20:49,748 - lanedet.utils.recorder - INFO - epoch: 11  step: 128211  lr: 0.0016  seg_loss: 0.0776  exist_loss: 0.0411  data: 0.1556  batch: 0.3114  eta: 0:26:29
+2024-12-03 14:26:01,309 - lanedet.utils.recorder - INFO - epoch: 11  step: 129211  lr: 0.0013  seg_loss: 0.0656  exist_loss: 0.0414  data: 0.1561  batch: 0.3117  eta: 0:21:18
+2024-12-03 14:31:13,139 - lanedet.utils.recorder - INFO - epoch: 11  step: 130211  lr: 0.0010  seg_loss: 0.0722  exist_loss: 0.0430  data: 0.1561  batch: 0.3129  eta: 0:16:07
+2024-12-03 14:36:25,193 - lanedet.utils.recorder - INFO - epoch: 11  step: 131211  lr: 0.0007  seg_loss: 0.0605  exist_loss: 0.0432  data: 0.1567  batch: 0.3115  eta: 0:10:56
+2024-12-03 14:41:36,966 - lanedet.utils.recorder - INFO - epoch: 11  step: 132211  lr: 0.0004  seg_loss: 0.0732  exist_loss: 0.0424  data: 0.1535  batch: 0.3111  eta: 0:05:45
+2024-12-03 14:46:48,326 - lanedet.utils.recorder - INFO - epoch: 11  step: 133211  lr: 0.0000  seg_loss: 0.0712  exist_loss: 0.0439  data: 0.1552  batch: 0.3122  eta: 0:00:33
+2024-12-03 14:47:22,220 - lanedet.utils.recorder - INFO - epoch: 11  step: 133320  lr: 0.0000  seg_loss: 0.0682  exist_loss: 0.0412  data: 0.1565  batch: 0.3093  eta: 0:00:00
+2024-12-03 15:11:58,140 - lanedet.datasets.base_dataset - INFO - [{"TP": 78025, "FP": 22483, "FN": 26861, "Precision": 0.7763063636725435, "Recall": 0.7439029041054097, "F1": 0.7597592918975238}]
+2024-12-03 15:11:58,141 - lanedet.utils.recorder - INFO - 0.7597592918975238
+2024-12-03 15:12:05,856 - lanedet.utils.recorder - INFO - Best metric: 0.7597592918975238
