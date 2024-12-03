@@ -26,56 +26,57 @@ class Log:
                 self.dataset: str = regex.search(Log.dataset_pattern, line).group()
 
     def plot(self):
-        times = []
-        steps = []
-        seg_losses = []
-        exit_losses = []       
-        metric_steps = []
-        best_metrics = []
-        tps = []
-        fps = []
-        fns = []
-        precisions = []
-        recalls = []
-        f1s = []
-        first: bool = True
+        #Todo: 
+        # 2 graphs one for numbers between 0 and 1, one for > 1
+        # depending on head, different metrics
+
+        __laneatt = ["loss", "cls_loss", "reg_loss"]
+
+        if self.head == "LaneATT":
+            step_keys = __laneatt
+        #Todo: other heads
+
+        epoch_keys = ["best_metric", "TP", "FP", "FN", "precision", "recall", "f1"]
+
+        plot_dict = {}
+        plot_dict["epochs"] = [0]
+        plot_dict["steps"] = []
+        plot_dict["step_values"] = {}
+        plot_dict["epoch_values"] = {}
+
+        for k in step_keys:
+            plot_dict["step_values"][k] = []
+        
+        for k in epoch_keys:
+            plot_dict["epoch_values"][k] = []
+
         for line in self.log_lines:
             if isinstance(line, EpochLine):
-                if first:
-                    first = False
-                    continue
-                times.append(line.timestamp)
-                steps.append(line.step)
-                # seg_losses.append(line.seg_loss)
-                # exit_losses.append(line.exist_loss)
-                
-            elif isinstance(line, JSONStatsLine):
-                    metric_steps.append(steps[-1]) #applies for JSONStatsLine and BestMetricLine
-                    tps.append(line.TP)
-                    fps.append(line.FP)
-                    fns.append(line.FN)
-                    precisions.append(line.precision)
-                    recalls.append(line.recall)
-                    f1s.append(line.f1)
-            elif isinstance(line, BestMetricLine):
-                    best_metrics.append(line.best_metric)
-    
-        #plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%HH'))
-        #plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=2))
-        # plt.plot(steps, seg_losses, label="seg_loss")
-        # plt.plot(steps, exit_losses, label="exit_loss")
-        plt.plot(metric_steps, best_metrics, label="best_metric")
-        #Todo: following stats in extra graph --> dimensions too different
-        plt.plot(metric_steps, tps, label="tp")
-        plt.plot(metric_steps, fps, label="fp")
-        plt.plot(metric_steps, fns, label="fn")
-        plt.plot(metric_steps, precisions, label="precision")
-        plt.plot(metric_steps, recalls, label="recall")
-        plt.plot(metric_steps, f1s, label="f1")
-        plt.legend(loc="upper right")
-        #Todo: axes labels, title of graph
-        plt.waitforbuttonpress()
+                if plot_dict["epochs"][-1] != line.epoch:
+                    plot_dict["epochs"].append(line.epoch)
+                plot_dict["steps"].append(line.step)
+                for key in step_keys:
+                    plot_dict["step_values"][key].append(getattr(line, key))
+            if isinstance(line, BestMetricLine):
+                plot_dict["epoch_values"]["best_metric"].append(line.best_metric)
+            if isinstance(line, JSONStatsLine):
+                for key in epoch_keys:
+                    if key != "best_metric":
+                        plot_dict["epoch_values"][key].append(getattr(line, key))
 
+        f1 = plt.figure("1")
+        for key in step_keys:
+            plt.plot(plot_dict["steps"], plot_dict["step_values"][key], label=key)
+            plt.legend()
+        
+        f2 = plt.figure("2")
+        for key in plot_dict["epoch_values"]:
+            plt.plot(plot_dict["epochs"], plot_dict["epoch_values"][key], label=key)
+            plt.legend()
+        
+        f1.show()
+        f2.show()
+        plt.waitforbuttonpress()              
 class LogLine:
     timestamp_pattern: str = r'\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3}'
     module_patttern: str = r'(?<=' + timestamp_pattern + r'\s-\s)(.*?)(?=\s-\s\w*\s\-\s.*)'
