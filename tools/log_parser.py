@@ -35,20 +35,25 @@ class Log:
         if self.head == "LaneATT":
             step_keys = __laneatt
         #Todo: other heads
-
-        epoch_keys = ["best_metric", "TP", "FP", "FN", "precision", "recall", "f1"]
+        
+        epoch_keys_small = ["best_metric", "precision", "recall", "f1"]
+        epoch_keys_big = ["TP", "FP", "FN"]
 
         plot_dict = {}
         plot_dict["epochs"] = [0]
         plot_dict["steps"] = []
         plot_dict["step_values"] = {}
-        plot_dict["epoch_values"] = {}
+        plot_dict["epoch_values_small"] = {}
+        plot_dict["epoch_values_big"] = {}
 
         for k in step_keys:
             plot_dict["step_values"][k] = []
         
-        for k in epoch_keys:
-            plot_dict["epoch_values"][k] = []
+        for k in epoch_keys_small:
+            plot_dict["epoch_values_small"][k] = []
+
+        for k in epoch_keys_big:
+            plot_dict["epoch_values_big"][k] = []
 
         for line in self.log_lines:
             if isinstance(line, EpochLine):
@@ -58,24 +63,35 @@ class Log:
                 for key in step_keys:
                     plot_dict["step_values"][key].append(getattr(line, key))
             if isinstance(line, BestMetricLine):
-                plot_dict["epoch_values"]["best_metric"].append(line.best_metric)
+                plot_dict["epoch_values_small"]["best_metric"].append(line.best_metric)
             if isinstance(line, JSONStatsLine):
-                for key in epoch_keys:
+                for key in epoch_keys_small:
                     if key != "best_metric":
-                        plot_dict["epoch_values"][key].append(getattr(line, key))
+                        plot_dict["epoch_values_small"][key].append(getattr(line, key))
+                for key in epoch_keys_big:
+                        plot_dict["epoch_values_big"][key].append(getattr(line, key))
+                
 
         f1 = plt.figure("1")
         for key in step_keys:
             plt.plot(plot_dict["steps"], plot_dict["step_values"][key], label=key)
             plt.legend()
-        
+        ax = plt.gca()
+        #ax.set_xlim([xmin, xmax])
+        ax.set_ylim([0, 10])
         f2 = plt.figure("2")
-        for key in plot_dict["epoch_values"]:
-            plt.plot(plot_dict["epochs"], plot_dict["epoch_values"][key], label=key)
+        for key in plot_dict["epoch_values_small"]:
+            plt.plot(plot_dict["epochs"], plot_dict["epoch_values_small"][key], label=key)
+            plt.legend()
+
+        f3 = plt.figure("3")
+        for key in plot_dict["epoch_values_big"]:
+            plt.plot(plot_dict["epochs"], plot_dict["epoch_values_big"][key], label=key)
             plt.legend()
         
         f1.show()
         f2.show()
+        f3.show()
         plt.waitforbuttonpress()              
 class LogLine:
     timestamp_pattern: str = r'\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2},\d{3}'
