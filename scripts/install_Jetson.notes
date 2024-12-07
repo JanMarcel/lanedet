@@ -13,3 +13,9 @@ torch(vision/audio) from here:
 - pip3 install torchaudio-2.3.0+952ea74-cp310-cp310-linux_aarch64.whl
 - wget https://nvidia.box.com/shared/static/u0ziu01c0kyji4zz3gxam79181nebylf.whl -O torchvision-0.18.0a0+6043bc2-cp310-cp310-linux_aarch64.whl
 - pip3 install torchvision-0.18.0a0+6043bc2-cp310-cp310-linux_aarch64.whl
+
+opencv v4.5.5
+- build from source: https://github.com/opencv/opencv/archive/refs/tags/4.5.5.zip
+- https://docs.opencv.org/4.x/d7/d9f/tutorial_linux_install.html 
+- copy and rename libopencv_core.so.4.5.5 from build directory to /usr/lib/aarch64-linux-gnu/libopencv_core.so.4.5d 
+- restart Jetson!!
