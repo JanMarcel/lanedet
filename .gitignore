@@ -4,6 +4,7 @@ work_dirs/
 predicts/
 output/
 data/
+lab_pics/
 
 __pycache__/
 */*.un~
