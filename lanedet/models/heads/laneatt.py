@@ -86,12 +86,12 @@ class LaneATT(nn.Module):
         nms_topk=param.nms_topk
         x = x[-1]
         batch_features = self.conv1(x)
-        print("batch features"+'-'*100)
-        print(batch_features)
-        print(batch_features.shape)
+        #print("batch features"+'-'*100)
+        #print(batch_features)
+        #print(batch_features.shape)
         batch_anchor_features = self.cut_anchor_features(batch_features)
-        print(batch_anchor_features)
-        print(batch_anchor_features.shape)
+        #print(batch_anchor_features)
+        #print(batch_anchor_features.shape)
 
         # Join proposals from all images into a single proposals features batch
         batch_anchor_features = batch_anchor_features.view(-1, self.anchor_feat_channels * self.fmap_h)
@@ -114,9 +114,9 @@ class LaneATT(nn.Module):
         # Predict
         cls_logits = self.cls_layer(batch_anchor_features)
         reg = self.reg_layer(batch_anchor_features)
-        print("#4"+'-'*100)
-        print(cls_logits.shape)
-        print(cls_logits)
+        #print("#4"+'-'*100)
+        #print(cls_logits.shape)
+        #print(cls_logits)
         
 
         # Undo joining
