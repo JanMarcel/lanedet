@@ -47,8 +47,9 @@ def convert_annotation(annotation: dict):
     dic["raw_file"] = "d3b4989f-test_0.jpg" #+ annotation["file_upload"] #Todo think about directory strucure
 
     print(dic)
-    with open("LinkLabelStudio/target_file.json", "w") as f:# Todo file-name dynamic
-        json.dump(dic, f)
+    with open("LinkLabelStudio/target_file.json", "a") as f:# Todo file-name dynamic
+        j = json.dumps(dic)
+        f.write(j +'\n')
 
 def convert_annotation_result(result: dict):
     global current_img
@@ -67,4 +68,4 @@ def convert_annotation_result(result: dict):
     current_img = cv2.circle(current_img, point, radius=5, color=(0, 0, 255), thickness=-1)    
 
     
-convert('LinkLabelStudio/project-5-at-2024-11-20-07-55-53287f8c.json')
+convert('LinkLabelStudio\project-5-at-2024-12-04-05-55-e9304360.json')
