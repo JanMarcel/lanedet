@@ -1,26 +1,31 @@
 import json
 import cv2
+import os
+
 global current_img
 
-def convert(path: str):
+def convert(path: str, clip_path: str):
     project: dict = readJSON(path)
-    for picture in project:
-        convert_pic(picture)
+    if not os.path.exists(os.path.splitext(path)[0] + '_converted.json'):
+        for picture in project:
+            convert_pic(picture, path, clip_path)
+    else:
+        print("Already converted")
 
 def readJSON(path: str) -> dict:
     with open(path) as f:
         return json.load(f)
 
-def convert_pic(picture: dict):
+def convert_pic(picture: dict, path: str, clip_path: str):
     global current_img
-    print(f'convert picture with id {picture["id"]} and name {picture["file_upload"]}')   
-    current_img = cv2.imread("LinkLabelStudio/" + picture["file_upload"]) # Todo File path dynamic
+    print(f'convert picture with id {picture["id"]} and name {picture["file_upload"]}')
+    current_img = cv2.imread(clip_path + picture["file_upload"])
     for annotation in picture["annotations"]: 
         convert_annotation(annotation)
     cv2.imshow('view', current_img)
     cv2.waitKey(0)
 
-def convert_annotation(annotation: dict):
+def convert_annotation(annotation: dict, path: str):
     print(f'\t convert annotation with id {annotation["id"]}')
     h_samples: list[int] = []
     for result in annotation["result"]:
@@ -47,7 +52,7 @@ def convert_annotation(annotation: dict):
     dic["raw_file"] = "d3b4989f-test_0.jpg" #+ annotation["file_upload"] #Todo think about directory strucure
 
     print(dic)
-    with open("LinkLabelStudio/target_file.json", "a") as f:# Todo file-name dynamic
+    with open(os.path.splitext(path)[0] + '_converted.json', "a") as f:# Todo file-name dynamic
         j = json.dumps(dic)
         f.write(j +'\n')
 
@@ -68,4 +73,4 @@ def convert_annotation_result(result: dict):
     current_img = cv2.circle(current_img, point, radius=5, color=(0, 0, 255), thickness=-1)    
 
     
-convert('LinkLabelStudio\project-5-at-2024-12-04-05-55-e9304360.json')
+convert('data/LinkLabel/project-5-at-2024-12-04-05-55-e9304360.json', 'data/LinkLabel/clips/241203/')
