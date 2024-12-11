@@ -25,7 +25,7 @@ def convert_pic(picture: dict, path: str, clip_path: str):
     cv2.imshow('view', current_img)
     cv2.waitKey(0)
 
-def convert_annotation(annotation: dict, path: str):
+def convert_annotation(annotation: dict, path: str, pic_path: str):
     print(f'\t convert annotation with id {annotation["id"]}')
     h_samples: list[int] = []
     for result in annotation["result"]:
@@ -49,10 +49,10 @@ def convert_annotation(annotation: dict, path: str):
     dic["h_samples"] = h_samples
     for i in range(len(h_samples)):
         dic["h_samples"][i] = round(dic["h_samples"][i]*annotation["result"][0]["original_height"]/100) #Todo check for doubles
-    dic["raw_file"] = "d3b4989f-test_0.jpg" #+ annotation["file_upload"] #Todo think about directory strucure
+    dic["raw_file"] = pic_path
 
     print(dic)
-    with open(os.path.splitext(path)[0] + '_converted.json', "a") as f:# Todo file-name dynamic
+    with open(os.path.splitext(path)[0] + '_converted.json', "a") as f:
         j = json.dumps(dic)
         f.write(j +'\n')
 
