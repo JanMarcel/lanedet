@@ -20,10 +20,10 @@ def convert_pic(picture: dict, path: str, clip_path: str):
     global current_img
     print(f'convert picture with id {picture["id"]} and name {picture["file_upload"]}')
     current_img = cv2.imread(clip_path + picture["file_upload"])
-    for annotation in picture["annotations"]: 
-        convert_annotation(annotation)
-    cv2.imshow('view', current_img)
-    cv2.waitKey(0)
+    for annotation in picture["annotations"]:
+        convert_annotation(annotation, path, (clip_path + picture["file_upload"]).replace("data/LinkLabel/", ""))
+    #cv2.imshow('view', current_img)
+    #cv2.waitKey(0)
 
 def convert_annotation(annotation: dict, path: str, pic_path: str):
     print(f'\t convert annotation with id {annotation["id"]}')
