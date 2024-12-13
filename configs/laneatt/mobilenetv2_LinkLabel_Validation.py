@@ -84,7 +84,7 @@ val_process = [
 ] 
 
 dataset_path = './data/LinkLabel/'
-test_json_file = 'data/LinkLabel/project-5-at-2024-12-04-05-55-e9304360_converted.json'
+test_json_file = 'data/LinkLabel/test_label.json'
 dataset_type = 'TuSimple'
 
 dataset = dict(
