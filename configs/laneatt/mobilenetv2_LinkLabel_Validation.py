@@ -83,9 +83,9 @@ val_process = [
     dict(type='ToTensor', keys=['img']),
 ] 
 
-dataset_path = './data/LinkLabel/'
-test_json_file = 'data/LinkLabel/test_label.json'
-dataset_type = 'TuSimple'
+dataset_path = './data/LinkLabel/clips/241203/'
+test_json_file = 'data/LinkLabel/project-5-at-2024-12-04-05-55-e9304360.json'
+dataset_type = 'LinkLabel'
 
 dataset = dict(
     train=dict(
