@@ -10,7 +10,7 @@ from .registry import DATASETS
 from .process import Process
 from lanedet.utils.visualization import imshow_lanes
 from mmcv.parallel import DataContainer as DC
-
+from lanedet.utils.link_label_reader import load_link_label_project
 
 @DATASETS.register_module
 class BaseDataset(Dataset):
@@ -24,14 +24,16 @@ class BaseDataset(Dataset):
 
 
     def view(self, predictions, img_metas):
+        json_gt, max_lanes = load_link_label_project(self.cfg.test_json_file, self.data_root)
         img_metas = [item for img_meta in img_metas.data for item in img_meta]
         for lanes, img_meta in zip(predictions, img_metas):
             img_name = img_meta['img_name']
+            labels = [elem for elem in json_gt if elem['img_name'] == img_name][0]['lanes']
             img = cv2.imread(osp.join(self.data_root, img_name))
             out_file = osp.join(self.cfg.work_dir, 'visualization',
                                 img_name.replace('/', '_'))
             lanes = [lane.to_array(self.cfg) for lane in lanes]
-            imshow_lanes(img, lanes, out_file=out_file)
+            imshow_lanes(img, lanes, out_file=out_file, labels=labels)
 
     def __len__(self):
         return len(self.data_infos)

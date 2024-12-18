@@ -86,7 +86,7 @@ class LinkLabel(BaseDataset):
 
     def evaluate(self, predictions, output_basedir, runtimes=None):
         pred_filename = os.path.join(output_basedir, 'linklabel_predictions.json')
-        self.save_tusimple_predictions(predictions, pred_filename, runtimes) # pass height samples from Label here
+        self.save_tusimple_predictions(predictions, pred_filename, runtimes)
         result, acc = LaneEval.bench_one_submit(pred_filename, self.cfg.test_json_file, self.data_root)
         self.logger.info(result)
         return acc

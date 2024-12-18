@@ -12,6 +12,16 @@ def imshow_lanes(img, lanes, show=False, out_file=None):
                 cv2.circle(img, (x, y), 4, (0, 255, 0), 2)
             else:
                 cv2.circle(img, (x, y), 4, (255, 0, 0), 2)
+    
+    if labels is not None:
+        for lane in labels:
+            for x, y in lane:
+                if x <= 0 or y <= 0:
+                    continue
+                x, y = int(x), int(y)
+
+                cv2.circle(img, (x, y), 4, (0, 0, 255), 2)
+
 
     if show:
         cv2.imshow('view', img)

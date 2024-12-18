@@ -30,8 +30,8 @@ class LaneEval(object):
         #ToDo: rewrite this
         # things to know -> Abstand labels abhängig von y-Abstand
         # Erwartung: wird schlechter je weiter weg
-        if any(len(p) != len(y_samples) for p in pred): # problem: len(p) = 56 and len(y) = 14
-            raise Exception('Format of lanes error.') # where is the len of 56 coded???
+        if any(len(p) != len(y_samples) for p in pred):
+            raise Exception('Format of lanes error.')
         if running_time > 200 or len(gt) + 2 < len(pred):
             return 0., 0., 1.
         angles = [LaneEval.get_angle(
