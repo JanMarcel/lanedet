@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import json as json
-
+from lanedet.utils.link_label_reader import load_link_label_project
 
 class LaneEval(object):
     lr = LinearRegression()
@@ -58,13 +58,14 @@ class LaneEval(object):
         return s / max(min(4.0, len(gt)), 1.), fp / len(pred) if len(pred) > 0 else 0., fn / max(min(len(gt), 4.), 1.)
 
     @staticmethod
-    def bench_one_submit(pred_file, gt_file):
+    def bench_one_submit(pred_file, gt_file, data_root: str):
         try:
             json_pred = [json.loads(line)
                          for line in open(pred_file).readlines()]
         except BaseException as e:
             raise Exception('Fail to load json file of the prediction.')
-        json_gt = [json.loads(line) for line in open(gt_file).readlines()] # read valid json istead of bullshit!
+        #json_gt = [json.loads(line) for line in open(gt_file).readlines()] # read valid json istead of this bullshit!
+        json_gt, max_lanes = load_link_label_project(gt_file, data_root)
         if len(json_gt) != len(json_pred):
             raise Exception(
                 'We do not get the predictions of all the test tasks')
@@ -81,8 +82,14 @@ class LaneEval(object):
                 raise Exception(
                     'Some raw_file from your predictions do not exist in the test tasks.')
             gt = gts[raw_file]
-            gt_lanes = gt['lanes']
-            y_samples = gt['h_samples']
+            y_samples = gt['h_samples']      
+            gt_lanes = []
+            #reformat #Todo: irgendwo allg. machen
+            for gt_lane in gt['lanes']:
+                lane = [-2] * len(y_samples)
+                for x, y in gt_lane:
+                    lane[y_samples.index(y)] = x
+                gt_lanes.append(lane)
             try:
                 a, p, n = LaneEval.bench(
                     pred_lanes, gt_lanes, y_samples, run_time)
