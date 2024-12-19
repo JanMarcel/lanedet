@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 import json as json
 from lanedet.utils.link_label_reader import load_link_label_project
+import cv2
 
 class LaneEval(object):
     lr = LinearRegression()
@@ -41,6 +42,7 @@ class LaneEval(object):
         fp, fn = 0., 0.
         matched = 0.
         for x_gts, thresh in zip(gt, threshs):
+            #draw prediction and label here
             accs = [LaneEval.line_accuracy(
                 np.array(x_preds), np.array(x_gts), thresh) for x_preds in pred]
             max_acc = np.max(accs) if len(accs) > 0 else 0.
@@ -64,7 +66,6 @@ class LaneEval(object):
                          for line in open(pred_file).readlines()]
         except BaseException as e:
             raise Exception('Fail to load json file of the prediction.')
-        #json_gt = [json.loads(line) for line in open(gt_file).readlines()] # read valid json istead of this bullshit!
         json_gt, max_lanes = load_link_label_project(gt_file, data_root)
         if len(json_gt) != len(json_pred):
             raise Exception(
@@ -90,6 +91,34 @@ class LaneEval(object):
                 for x, y in gt_lane:
                     lane[y_samples.index(y)] = x
                 gt_lanes.append(lane)
+            #timTest
+            img = cv2.imread(data_root + pred['raw_file'])
+            lane_colors = [(255, 0, 255), (255, 255, 0), (127, 0, 255), (255, 0, 0), (255, 128, 0), ]
+            # cv2.imshow("img", img)
+            for idy, y in enumerate(y_samples):
+                y_detected = False
+
+                #erkannte Linie
+                for i, l in enumerate(pred_lanes):
+                    x = l[idy]
+                    if x > 0:
+                        y_detected = True
+                        cv2.circle(img, (x, y), 4, lane_colors[i], 2)
+                
+                # gelabelte Punkte
+                for l in gt_lanes:
+                    x = l[idy]
+                    if x > 0:
+                        cv2.circle(img, (x, y), 4, (0, 255, 255), 2)
+                
+                if y_detected:
+                    cv2.line(img, (0, y), (img.shape[1], y), (0, 255, 0))
+                else:
+                    cv2.line(img, (0, y), (img.shape[1], y), (0, 0, 255))
+                
+            
+            cv2.imwrite("TimTest123.jpg", img)
+
             try:
                 a, p, n = LaneEval.bench(
                     pred_lanes, gt_lanes, y_samples, run_time)

@@ -12,7 +12,7 @@ featuremap_out_channel = 1280
 featuremap_out_stride = 32 
 
 num_points = 72
-max_lanes = 5
+max_lanes = 2
 sample_y = range(710, 150, -10)
 
 heads = dict(type='LaneATT',
