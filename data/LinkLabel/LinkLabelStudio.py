@@ -28,79 +28,45 @@ def convert_pic(picture: dict, path: str, clip_path: str):
 
 def convert_annotation(annotation: dict, path: str, pic_path: str):
     print(f'\t convert annotation with id {annotation["id"]}')
-    h_samples: list[int] = []
-    for result in annotation["result"]:
-        h_samples.append(result["value"]["y"])
-        #convert_annotation_result(result)
-    h_samples.sort()
-    left: list[int] = [-2] * len(h_samples)
-    right: list[int] = [-2] * len(h_samples)
+    lanes = {}
     for result in annotation["result"]:
         label = result["value"]["keypointlabels"]
-        if label == ["lane-left"]:
-            left[h_samples.index(result["value"]["y"])] = round(result["value"]["x"]*result["original_width"]/100)
-        elif label == ["lane-right"]:
-            right[h_samples.index(result["value"]["y"])] = round(result["value"]["x"]*result["original_width"]/100)
-        else:
-            print(f"Could not parse label: {label}")
+        if len(label) > 1:
+            raise Exception("Label has more than one element")
+        label = label[0]
+        
+        if label not in lanes:
+            lanes[label] = []
+        #collect all points sorted by label
+        lanes[label].append((round(result["value"]["x"]*result["original_width"]/100), round(result["value"]["y"]*result["original_height"]/100)))
     
+
+    adjusted_lanes, h_samples = adjust_y_samples(lanes)
     #create line for target_file
     dic = {}
-    dic["lanes"] = [left, right]
+    dic["lanes"] = adjusted_lanes
     dic["h_samples"] = h_samples
-    for i in range(len(h_samples)):
-        dic["h_samples"][i] = round(dic["h_samples"][i]*annotation["result"][0]["original_height"]/100) #Todo check for doubles
     dic["raw_file"] = pic_path
-
-    #recalculate to match tusimple y_samples
-    dic = adjust_y_samples(dic)
     with open(os.path.splitext(path)[0] + '_converted.json', "a") as f:
         j = json.dumps(dic)
         f.write(j +'\n')
-
-def adjust_y_samples(dic: dict, y_samples: list[int]=list(range(160, 720, 10))) -> dict:
-    lanes = []
-    ret = {}
-    ret["lanes"] = []
-    ret["h_samples"] = y_samples
-    ret["raw_file"] = dic["raw_file"]
-    for lane in dic["lanes"]:
-        lane_points = []
-        for i in range(len(lane) - 1):
-            if lane[i] != -2:
-                lane_points.append((dic["h_samples"][i], lane[i]))
-        lanes.append(lane_points)
     
-    for lane in lanes:
-        print(lane)
-        x_lane: list[int] = [-2] * len(y_samples)
-        if len(lane) > 2:
-            pol = numpy_polyfit(lane)        
+
+def adjust_y_samples(lanes: list, y_samples: list[int]=list(range(160, 720, 10))) -> dict:
+    adjusted_lanes = []
+    for l_name, lane in lanes.items():
+        orig_y = [point[1] for point in lane]
+        valid_lane = [(point[1], point[0]) for point in lane if point[0] != -2] #exchange x and y for easier x calculation
+        if len(valid_lane) > 2:
+            pol = numpy_polyfit(valid_lane, 2)
+            x_lane: list[int] = [-2] * len(y_samples)
             for y in y_samples:
-                if y > min(dic["h_samples"]) and y < max(dic["h_samples"]): # dont predict line
+                if y > min(orig_y) and y < max(orig_y): # dont predict line
                     x = int(pol(y))
                     if x >= 0: # dont predict line outside of image
                         x_lane[y_samples.index(y)] = x
-        ret["lanes"].append(x_lane)
-    
-    return ret
-
-
-def convert_annotation_result(result: dict):
-    global current_img
-    print(f'\t\t convert result with id {result["id"]}')
-    label = result["value"]["keypointlabels"]
-
-    if label == ["lane-left"]:
-        print("left")
-    elif label == ["lane-right"]:
-        print("right")
-    else:
-        print(f"Could not parse label: {label}")
-    
-    point = (round(result["value"]["x"]/100 * result["original_width"]), round(result["value"]["y"]/100 * result["original_height"]))
-    print(point)
-    current_img = cv2.circle(current_img, point, radius=5, color=(0, 0, 255), thickness=-1)    
+            adjusted_lanes.append(x_lane)
+    return adjusted_lanes, y_samples
 
 
 def numpy_polyfit(points, degree=None):
