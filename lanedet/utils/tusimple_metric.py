@@ -1,4 +1,5 @@
 import numpy as np
+import openpyxl.worksheet
 from sklearn.linear_model import LinearRegression
 import json as json
 import openpyxl
@@ -79,7 +80,7 @@ class LaneEval(object):
             if raw_file not in gts:
                 raise Exception(
                     'Some raw_file from your predictions do not exist in the test tasks.')
-            sheet = wb.create_sheet(raw_file.replace("/", "%"))
+            sheet: openpyxl.worksheet = wb.create_sheet(raw_file.replace("/", "%"))
             gt = gts[raw_file]
             gt_lanes = gt['lanes']
             y_samples = gt['h_samples']
@@ -110,13 +111,14 @@ class LaneEval(object):
                     sheet.cell(row+li, yi+column).value = label[yi]
                 
                 label_offset = li + 2
+                gt_lanes_len = len(gt_lanes) +1
                 for li, lane in enumerate(pred_lanes):
-                    sheet.cell(row+li+label_offset, 1).value = "Lane" + str(li)        
-                    sheet.cell(row+li+label_offset, yi+column).value = lane[yi]
+                    sheet.cell(row+li*gt_lanes_len+label_offset, 1).value = "Lane" + str(li)        
+                    sheet.cell(row+li*gt_lanes_len+label_offset, yi+column).value = lane[yi]
 
                     for lj, label in enumerate(gt_lanes):
                         column_letter = get_column_letter(yi+column)
-                        sheet.cell(row+li+label_offset+lj, yi+column).value = "" + column_letter + str(row+li) + "-" + column_letter + str(row+li+label_offset)
+                        sheet.cell(row+li*gt_lanes_len+label_offset+lj+1, yi+column).value = "=" + column_letter + str(row+lj) + "-" + column_letter + str(row+li+label_offset)
                     
         num = len(gts)
         
