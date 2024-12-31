@@ -1,7 +1,8 @@
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import json as json
-
+import openpyxl
+from openpyxl.utils import get_column_letter
 
 class LaneEval(object):
     lr = LinearRegression()
@@ -62,6 +63,7 @@ class LaneEval(object):
         except BaseException as e:
             raise Exception('Fail to load json file of the prediction.')
         json_gt = [json.loads(line) for line in open(gt_file).readlines()]
+        wb = openpyxl.Workbook()
         if len(json_gt) != len(json_pred):
             raise Exception(
                 'We do not get the predictions of all the test tasks')
@@ -77,18 +79,48 @@ class LaneEval(object):
             if raw_file not in gts:
                 raise Exception(
                     'Some raw_file from your predictions do not exist in the test tasks.')
+            sheet = wb.create_sheet(raw_file.replace("/", "%"))
             gt = gts[raw_file]
             gt_lanes = gt['lanes']
             y_samples = gt['h_samples']
             try:
                 a, p, n = LaneEval.bench(
                     pred_lanes, gt_lanes, y_samples, run_time)
+                
+                sheet["A1"] = "Accuracy:"
+                sheet["A2"] = "FalsePositive"
+                sheet["A3"] = "FalseNegative"
+                sheet["B1"] = a
+                sheet["B2"] = p
+                sheet["B3"] = n
+
+                sheet["A5"] = "y_samples"
             except BaseException as e:
                 raise Exception('Format of lanes error.')
             accuracy += a
             fp += p
             fn += n
+            
+            for yi, y in enumerate(y_samples):
+                row = 6
+                column = 3
+                sheet.cell(5, yi+column).value = y
+                for li, label in enumerate(gt_lanes):
+                    sheet.cell(row+li, 1).value = "Label" + str(li)           
+                    sheet.cell(row+li, yi+column).value = label[yi]
+                
+                label_offset = li + 2
+                for li, lane in enumerate(pred_lanes):
+                    sheet.cell(row+li+label_offset, 1).value = "Lane" + str(li)        
+                    sheet.cell(row+li+label_offset, yi+column).value = lane[yi]
+
+                    for lj, label in enumerate(gt_lanes):
+                        column_letter = get_column_letter(yi+column)
+                        sheet.cell(row+li+label_offset+lj, yi+column).value = "" + column_letter + str(row+li) + "-" + column_letter + str(row+li+label_offset)
+                    
         num = len(gts)
+        
+        wb.save(filename="evaluation.xlsx")
         # the first return parameter is the default ranking parameter
         return json.dumps([
             {'name': 'Accuracy', 'value': accuracy / num, 'order': 'desc'},

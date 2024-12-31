@@ -2,6 +2,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "PyDebug: Validate with conda",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "main.py",
+            "console": "integratedTerminal",
+            "python": "${userHome}/.conda/envs/laneDet/bin/python",
+            "args": [
+                "configs/laneatt/mobilenetv2_tusimple_200epochs.py",
+                "--validate",
+                "--load_from",
+                "models/mobilenet_tusimple_200epochs.pth",
+                "--gpus",
+                "0"
+            ]
+        },
+        {
             "name": "Python-Debugger: Detect with conda",
             "type": "debugpy",
             "request": "launch",
