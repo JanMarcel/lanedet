@@ -118,7 +118,7 @@ class LaneEval(object):
 
                     for lj, label in enumerate(gt_lanes):
                         column_letter = get_column_letter(yi+column)
-                        sheet.cell(row+li*gt_lanes_len+label_offset+lj+1, yi+column).value = "=" + column_letter + str(row+lj) + "-" + column_letter + str(row+li+label_offset)
+                        sheet.cell(row+li*gt_lanes_len+label_offset+lj+1, yi+column).value = "=" + column_letter + str(row+lj) + "-" + column_letter + str(row+li*gt_lanes_len+label_offset)
                     
         num = len(gts)
         
