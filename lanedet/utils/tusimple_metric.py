@@ -80,7 +80,8 @@ class LaneEval(object):
             if raw_file not in gts:
                 raise Exception(
                     'Some raw_file from your predictions do not exist in the test tasks.')
-            sheet: openpyxl.worksheet = wb.create_sheet(raw_file.replace("/", "%"))
+
+            sheet: openpyxl.worksheet = wb.create_sheet(os.path.basename(os.path.dirname(raw_file)))
             gt = gts[raw_file]
             gt_lanes = gt['lanes']
             y_samples = gt['h_samples']
