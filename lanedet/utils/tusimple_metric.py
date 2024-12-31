@@ -130,21 +130,48 @@ class LaneEval(object):
         sheet["B3"] = false_negative
 
         sheet["A5"] = "y_samples"
+        series  = []
 
+        y_values = Reference(sheet, min_col=1, min_row=6, max_row=6+len(y_samples), max_col=1)
+            
         for i, y in enumerate(y_samples):
-            sheet[f"A{i + 6}"] = y
+            sheet[f"A{i + 6}"] = -y
         
         for i, gt_lane in enumerate(gt):
+            x_values = Reference(sheet, min_col=i + 2, min_row=6, max_row=6+len(gt_lane), max_col=i + 2)
+            series.append(Series(y_values, x_values, title="Label" + str(i)))
             sheet.cell(row=5, column=i + 2).value = "Label" + str(i)
             for j, x in enumerate(gt_lane):
-                sheet.cell(row=j + 6, column=i + 2).value = x
+                if x != -2:
+                    sheet.cell(row=j + 6, column=i + 2).value = x
         
         column_offset = len(gt) + 2
         for i, pred_lane in enumerate(pred):
             sheet.cell(row=5, column=i + column_offset).value = "Lane" + str(i)
             for j, x in enumerate(pred_lane):
-                sheet.cell(row=j + 6, column=i + column_offset).value = x
+                if x != -2:
+                    sheet.cell(row=j + 6, column=i + column_offset).value = x
 
+        chart = ScatterChart()
+        chart.title = "Lane Evaluation"
+        chart.style = 2
+        chart.x_axis.title = "X-Values"
+        chart.y_axis.title = "Y-Samples"
+
+        chart.x_axis.scaling.min = 0
+        chart.x_axis.scaling.max = 1280
+        chart.y_axis.scaling.min = -720
+        chart.y_axis.scaling.max = 0
+
+    
+        for s in series:
+            s.marker.symbol = "circle"  # Use a circular marker
+            s.marker.size = 7
+            s.graphicalProperties.line.noFill = True
+            chart.series.append(s)
+
+        # Add the chart to the worksheet
+        sheet.add_chart(chart, "D5")
 if __name__ == '__main__':
     import sys
     try:
