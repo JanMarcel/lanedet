@@ -125,7 +125,7 @@ Download [Tusimple](https://github.com/TuSimple/tusimple-benchmark/issues/3). Th
 ```Shell
 cd $LANEDET_ROOT
 mkdir -p data
-ln -s $TUSIMPLEROOT data/tusimple
+ln -s $TUSIMPLEROOT data/TUSimple
 ```
 
 For Tusimple, you should have structure like this:
