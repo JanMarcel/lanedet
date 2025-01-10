@@ -141,12 +141,18 @@ class LaneEval(object):
             x_values = Reference(sheet, min_col=i + 2, min_row=6, max_row=6+len(gt_lane), max_col=i + 2)
             series.append(Series(y_values, x_values, title="Label" + str(i)))
             sheet.cell(row=5, column=i + 2).value = "Label" + str(i)
+            series[-1].marker.symbol = "x"
+            series[-1].marker.size = 3
             for j, x in enumerate(gt_lane):
                 if x != -2:
                     sheet.cell(row=j + 6, column=i + 2).value = x
         
         column_offset = len(gt) + 2
         for i, pred_lane in enumerate(pred):
+            x_values = Reference(sheet, min_col=i + column_offset, min_row=6, max_row=6+len(gt_lane), max_col=i + column_offset)
+            series.append(Series(y_values, x_values, title="Lane" + str(i)))
+            series[-1].marker.symbol = "circle"
+            series[-1].marker.size = 3
             sheet.cell(row=5, column=i + column_offset).value = "Lane" + str(i)
             for j, x in enumerate(pred_lane):
                 if x != -2:
@@ -165,8 +171,6 @@ class LaneEval(object):
 
     
         for s in series:
-            s.marker.symbol = "circle"  # Use a circular marker
-            s.marker.size = 7
             s.graphicalProperties.line.noFill = True
             chart.series.append(s)
 
