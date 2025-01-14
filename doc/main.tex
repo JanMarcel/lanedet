@@ -49,7 +49,7 @@
             Das Fahrzeug ist mit einem NVIDIA Jetson Orin Nano Developer Kit
             ausgestattet, welcher die Steuerung des Fahrzeugs übernimmt.
             Dabei kann das Fahrzeug sowohl im manuellen Modus per Tastatur gesteuert, als auch im autonomen Modus betrieben werden.
-            Zur Erkennung der Spur wird eine Kamera verwendet. %Todo Kamera-Name
+            Zur Erkennung der Spur wird die Intel® RealSense™ Depth Camera D435 verwendet.
             In der vorherigen Umsetzung wurde eine Kantendetektion verwendet, um die Spurmarkierungen zu erkennen.
             Mit Hilfe der Python-Bibliothek OpenCV wurden die Kanten der Spurmarkierungen wie folgt erkannt:
             Zunächst wurde das aufgenommene Farbbild mit der Methode \textit{cv2.cvtColor()} in Graustufen konvertiert, um anschließend mit \textit{cv2.GaussianBlur()} eine gaußsche Weichzeichnung durchzuführen, die das Ziel hatte Rauschen zu reduzieren und Details zu glätten. Im Anschluss sollten mit \textit{cv2.Canny()} Kanten identifiziert werden. Diese Methode arbeitet mit Ableitungen und nimmt an, dass Bereiche mit starken Änderungen Kanten entsprechen.
@@ -61,7 +61,7 @@
             Eine Deep-Learning-basierte Spurerkennung soll diese Probleme beheben und eine zuverlässige Spurerkennung auch unter schwierigen Bedingungen ermöglichen.
 
  
-            % Todo am besten quantifizieren
+            % Todo am besten quantifizieren --> Mars Bild von altem System vs neuem System
 
         \subsection{Aufgabenstellung}
             % siehe OneNote
@@ -80,6 +80,8 @@
             Anfängliche Probleme von Paketabhängigkeiten und Versionskonflikten konnten aufgelöst werden. 
             %Todo: landeDet auf HTWG Git schieben
             % ToDo: genaue Versionen pyTorch/cuda etc
+
+            %Todo: @Mars Was haben wir alles probiert bis Pytorch Cude etc. richtig installiert waren?
             Alle Änderungen können in der GIT-History nachvollzogen werden und über ergänzte Installationsskripte reproduziert werden, sodass das Projekt auch nach Abschluss des Teamprojekts weitergeführt werden kann. Letzter Stand: 15.01.2025. %Todo: Datum
             Zur Installation auf WorkingStations und Jetson können die Skripte \textit{scripts\textbackslash install\_workstation.sh} und \textit{scripts\textbackslash install\_jetson.sh} wie in der \textit{Read.me} beschrieben verwendet werden.
 
@@ -109,7 +111,6 @@
                     \label{fig:Laborbedingungen}
                 \end{figure}
 
-            %Todo: Links einfügen
             % ToDo: Beschreiben wie entpackt werden muss
 
             \subsubsection{Backbone}
@@ -162,12 +163,15 @@
 
             % Todo Performance in Bildern/Excel zeigen
             
-            Erste Tests auf dem Jetson Nano zeigten jedoch, dass die Modelle nicht in Echtzeit betrieben werden konnten. Eine verarbeitszeit von etwa 20 Sekunden pro Bild war zu langsam.
+            Erste Tests auf dem Jetson Nano zeigten jedoch, dass die Modelle nicht in Echtzeit betrieben werden konnten. Eine verarbeitszeit von etwa 20 Sekunden pro Bild war deutlich zu langsam.
+            In der Analyse wurde festgestellt, dass die größte Bottleneck im versenden der Bilder in der ROS-Version lag. In der Version Foxy gab es bekannte Performance Probleme wie dieser Issue zeigt: \url{https://github.com/ros2/rclpy/issues/763}.
+            In neuen Tests mit ROS2 Humble und einer präziseren Messung der Interferenz-Zeit lag die Verarbeitungszeit bei etwa einer Sekunde pro Bild, was immernoch zu langsam war.
             Um dieses Problem zu lösen wurde versucht das Modell zu quantisieren, was jedoch nicht zum Erfolg führte.
-            Eine Konvertierung in das ONNX-Format, konnte zwar durchgeführt werden, jedoch wurden keine Linien mit der konvertierten Variante erkannt.
+            Eine Konvertierung in das ONNX-Format, konnte zwar durchgeführt werden, erkannte das konvertierte Modell keine Spurmarkierungen mehr.
             %Todo mehr ausführen @Mars?
             Nach anschaffung eines neuen Jetson Nano konnte die Performance des Modells auf dem Jetson Nano deutlich verbessert werden, sodass keine weitere Anpassung mehr nötig waren.
-            %Todo: Performance auf neuem Jetson einfügen was für zeiten haben wir hier?
+            Auf diesem Jetson läuft nach letztem Stand ROS2 in der Version IRON und erzielt die in \ref{fig:Modell_Auswertung} gezeigten Interferenz-Zeiten.
+
         \subsection{Steuerung}
             % alte Steuerung
             % Projekt während Autonomes Fahren
