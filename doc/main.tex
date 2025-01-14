@@ -87,7 +87,7 @@
             Das verwendete Repository lanedet bietet eine Reihe von verschiedenen Architekturen, Backbones und Datensätzen, die für die Spurerkennung verwendet werden können.
             Um möglichst schnell einen Überblick über die verschiedenen Möglichkeiten zu bekommen, wurden zunächst die vorgegebenen Konfigurationen trainiert und dessen Modelle subjektiv bewertet.
             Dabei wurde berücksichtigt ob und wie gut die verschiedenen Modelle die Spurmarkierungen ahand von Beispielbildern aus dem Labor erkennen konnten.
-            % Todo: Bilder einfügen
+            Während erster Tests ist klar geworden, dass die Bildauflösung eine entscheidende Rolle für die Erkennung spielt. Anfangs wurde im besten Bild die unterschiedliche Farbe der Spurmarkierungen vermutet. Diese konnte jedoch durch nachbearbeitung der Bilder ausgeschlossen werden. Später stellte sich heraus, dass die gelben Linien im Bild durch die Verwendung unterschiedlicher Farbräume erklärt werden. In der Konfiguration der Kamera wurde rgb8 verwendet, während die Bibliothek cv2 die Bilder in bgr8 umwandelt. Um dieses Problem zu beheben wurde die Kamera-Konfiguration angepasst, sodass die Bilder in bgr8 gespeichert werden.
 
             \subsubsection{Datengrundlage}
             % --> auswahl aufgrund von bester subjektiver performance
@@ -103,11 +103,16 @@
                 Der Datensatz wird häufig verwendet, um die Robustheit von Algorithmen in herausfordernden Umgebungen zu testen, und bietet eine Plattform zur Bewertung der Fähigkeit von Modellen, Fahrspuren unter schwierigen Bedingungen zu erkennen.
                 \cite{Zhao2024StructLane} \cite{Lin2021Semi-Supervised}
 
+                Aufgrund der vergleichsweise einfachen Laborbedingungen mit zwei blauen Spurmarkierungen, die auf einem grauen Untergrund aufgebracht sind, wurde sich für den TUSimple-Datensatz entschieden.
+
+                \begin{figure}[h!]
+                    \includegraphics[width=\linewidth]{Laborbedingungen.jpg}
+                    \caption{Laborbedingungen}
+                    \label{fig:Laborbedingungen}
+                \end{figure}
+
             %Todo: Links einfügen
             % ToDo: Beschreiben wie entpackt werden muss
-  
-            %Todo Bilder einfügen
-            Während erster Tests ist klar geworden, dass die Bildauflösung eine entscheidende Rolle für die Erkennung spielt. Anfangs wurde im besten Bild die unterschiedliche Farbe der Spurmarkierungen vermutet. Diese konnte jedoch durch nachbearbeitung der Bilder ausgeschlossen werden.
 
             \subsubsection{Backbone}
             Wie bei der Datengrundlage stellt LaneDet auch eine Liste an Backbones zur Verfügung. Auch hier wurde zunächst subjektv entschieden, welcher Backbone die beste Erkennung liefert.
@@ -142,7 +147,7 @@
                     \caption{Modell-Auswertung}
                     \label{fig:Modell_Auswertung}
                 \end{figure}
-                Wie die Grafik aufzeigt, ist der TUSimple-Datensatz mit einem F1-Score von etwa 0.95 dem CULane-Datensatz mit einem Wert von etwa 0.75 deutlich überlegen.
+                Wie die Grafik aufzeigt, ist der TUSimple-Datensatz mit einem F1-Score von etwa 0.95 dem CULane-Datensatz mit einem Wert von etwa 0.75 deutlich überlegen, was durch die schwierigeren Bedingungen des CULane-Datensatzes zu erklären ist. Da in den Laborbedingungen des HTWG-RaceCars jedoch keine solch schwierigen Bedingungen wie Okklusionen vorliegen, ist der TU-Simple Datensatz für die Spurerkennung besser geeignet.
 
         \subsection{Performance}
             % --> performance der modelle auf Labor PC's
