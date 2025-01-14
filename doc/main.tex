@@ -163,14 +163,41 @@
 
             % Todo Performance in Bildern/Excel zeigen
             
-            Erste Tests auf dem Jetson Nano zeigten jedoch, dass die Modelle nicht in Echtzeit betrieben werden konnten. Eine verarbeitszeit von etwa 20 Sekunden pro Bild war deutlich zu langsam.
-            In der Analyse wurde festgestellt, dass die größte Bottleneck im versenden der Bilder in der ROS-Version lag. In der Version Foxy gab es bekannte Performance Probleme wie dieser Issue zeigt: \url{https://github.com/ros2/rclpy/issues/763}.
+            Erste Tests auf dem Jetson Nano zeigten jedoch, dass die Modelle nicht in Echtzeit betrieben werden konnten. Eine anfängliche Verarbeitszeit von etwa 20 Sekunden pro Bild war deutlich zu langsam.
+            In der Analyse wurde festgestellt, dass die größte Bottleneck im versenden der Bilder zwischen ROS-Knoten in der ROS-Version lag. In der Version Foxy gab es für python bekannte Performance Probleme wie dieser Issue zeigt: \url{https://github.com/ros2/rclpy/issues/763}.
             In neuen Tests mit ROS2 Humble und einer präziseren Messung der Interferenz-Zeit lag die Verarbeitungszeit bei etwa einer Sekunde pro Bild, was immernoch zu langsam war.
             Um dieses Problem zu lösen wurde versucht das Modell zu quantisieren, was jedoch nicht zum Erfolg führte.
-            Eine Konvertierung in das ONNX-Format, konnte zwar durchgeführt werden, erkannte das konvertierte Modell keine Spurmarkierungen mehr.
+            Eine Konvertierung in das ONNX-Format, konnte zwar durchgeführt werden, allerdings erkannte das konvertierte Modell keine Spurmarkierungen mehr.
             %Todo mehr ausführen @Mars?
             Nach anschaffung eines neuen Jetson Nano konnte die Performance des Modells auf dem Jetson Nano deutlich verbessert werden, sodass keine weitere Anpassung mehr nötig waren.
-            Auf diesem Jetson läuft nach letztem Stand ROS2 in der Version IRON und erzielt die in \ref{fig:Modell_Auswertung} gezeigten Interferenz-Zeiten.
+            Auf diesem Jetson läuft nach letztem Stand ROS2 in der Version IRON und erzielt die in \ref{fig:Modell_Auswertung} gezeigten Interferenz-Zeiten mit Bestwerten um 40ms.
+
+            Die Erkennung der Spurmarkierungen funktionierte nun bereits sehr robust wie folgende Abbildung zeigt.
+            Die gelabelten Spurmarkierungen sind in orange/grünen Kreuzen dargestellt, während die vom Modell erkannten Spurmarkierungen in lila/blauen Punkten dargestellt sind.
+            \begin{figure}[h!]
+                \includegraphics[width=\linewidth]{Auswertung_6e7e3724-test_103.png}
+                \caption{Auswertung 6e7e3724-test103.png}
+                \label{fig:Auswertung_6e7e3724-test_103.png}
+            \end{figure}
+            Die folgende Abbildung zeigt den Verlauf des Absoluten Fehlers in cm abhängig von der y-Koordinate des Bildes auf.
+            Dieser wurde berechnet, indem die bekannte Distanz zwischen den Spurmarkierungen von 60cm mit der Distanz zu den erkannten Spurmarkierungen verglichen wurde.
+
+            \begin{equation}
+                 c = \frac{D}{d} \cdot l
+            \end{equation}
+            Dabei ist $c$ der absolute Fehler in cm, $D$ die bekannte Distanz zwischen den Spurmarkierungen (60cm), $d$ die Distanz zwischen den gelabelten Spurmarkierungen in Pixeln und $l$ die Distanz zwischen gelabelter Linie und erkannter Linie in Pixeln.
+
+            \begin{figure}[h!]
+                \includegraphics[width=\linewidth]{Auswertung_6e7e3724-test_103_absolut.png}
+                \caption{Absoluter Fehler in cm}
+                \label{fig:AbsoluterFehlerCm}
+            \end{figure}
+
+            Wie auf in der Abbildung zu erkennen ist liegt der absolute Fehler in cm bei maximal 6cm und im Durchschnitt bei knapp unter 2cm, was eine sehr gute Genauigkeit darstellt.
+            Der erste Peak bei etwa -500 ist durch eine ungenauigkeit im Label0 zu erklären, die während der Umrechnung von den tatsächlich gelabelten Punkten auf die von TUSimple hart kodierten y-Samples entstanden ist. 
+            Abgesehen davon ist im Trend erkennbar, dass der absolute Fehler in cm mit zunehmender y-Koordinate zunimmt, was durch die Perspektive des Bildes zu erklären ist.
+            Die 0-Werte am Ende des Bildes sind durch zu kurze erkannte Linien zu erklären, die nicht bis zum Ende des Bildes reichen.
+
 
         \subsection{Steuerung}
             % alte Steuerung
