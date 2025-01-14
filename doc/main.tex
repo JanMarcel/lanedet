@@ -90,8 +90,6 @@
             Während erster Tests ist klar geworden, dass die Bildauflösung eine entscheidende Rolle für die Erkennung spielt. Anfangs wurde im besten Bild die unterschiedliche Farbe der Spurmarkierungen vermutet. Diese konnte jedoch durch nachbearbeitung der Bilder ausgeschlossen werden. Später stellte sich heraus, dass die gelben Linien im Bild durch die Verwendung unterschiedlicher Farbräume erklärt werden. In der Konfiguration der Kamera wurde rgb8 verwendet, während die Bibliothek cv2 die Bilder in bgr8 umwandelt. Um dieses Problem zu beheben wurde die Kamera-Konfiguration angepasst, sodass die Bilder in bgr8 gespeichert werden.
 
             \subsubsection{Datengrundlage}
-            % --> auswahl aufgrund von bester subjektiver performance
-            % nachweise für daten
                 Als Datengrundlage stellt LaneDet die verbreiteten Benchmark-Datensätze TUSimple  und CULane, die beide bereits annotierte Datensätze für die Spurerkennung bereitstellen, zu Verfügung.
                 
                 Der TUSimple-Datensatz ist ein weit verbreiteter Benchmark für die Erkennung von Fahrspuren, der häufig in der Forschung zur autonomen Fahrzeugtechnologie verwendet wird. Er bietet eine Plattform zur Bewertung der Genauigkeit und Effizienz von Algorithmen zur Fahrspurerkennung unter verschiedenen Bedingungen.
@@ -115,10 +113,19 @@
             % ToDo: Beschreiben wie entpackt werden muss
 
             \subsubsection{Backbone}
-            Wie bei der Datengrundlage stellt LaneDet auch eine Liste an Backbones zur Verfügung. Auch hier wurde zunächst subjektv entschieden, welcher Backbone die beste Erkennung liefert.
-            Auf dem Labor-PC konnten dabei mit dem Mobile-Net Backbone die besten Ergebnisse erzielt werden.
-            %Todo: Bilder einfügen
-            %Todo: Graphen einfügen
+                Als Backbone für die verschiedenen Architekturen standen die nachfolgend beschriebenen  Varianten im lanedet-Repository zur Verfügung.
+
+                \textbf{ResNet}, insbesondere ResNet50 und ResNet101, sind bekannt für ihre hohe Genauigkeit bei der Objekterkennung, was sie zu einer beliebten Wahl für Aufgaben im Bereich des autonomen Fahrens macht. ResNet50 bietet eine gute Balance zwischen Präzision und Geschwindigkeit, während ResNet101 eine höhere Genauigkeit auf Kosten eines höheren Speicherverbrauchs und einer größeren Anzahl von Parametern bietet. ResNet-Modelle sind jedoch speicherintensiv und benötigen mehr Rechenleistung, was sie weniger geeignet für mobile oder eingebettete Anwendungen macht.
+                \cite{Chen2021Deep}
+
+                \textbf{MobileNetV2}
+                MobileNetV2 ist für seine Effizienz und Geschwindigkeit bekannt, was es ideal für Anwendungen auf mobilen und eingebetteten Geräten macht. Es bietet eine schnellere Inferenzgeschwindigkeit im Vergleich zu ResNet, jedoch mit einer etwas geringeren Genauigkeit. MobileNetV2 ist besonders vorteilhaft, wenn die Rechenressourcen begrenzt sind, da es weniger Speicher benötigt und eine leichtere Architektur hat1. In Multi-Task-Learning-Architekturen zeigt MobileNetV2 die schnellste Inferenzgeschwindigkeit, obwohl die Leistung in allen Aufgaben relativ niedriger ist.
+                \cite{Chen2021Deep} \cite{Abdigapporov2022Performance}
+
+                \textbf{RESA} (Residual Spatial Attention) ist allgemein bekannt für seine Fähigkeit, die räumliche Aufmerksamkeit in neuronalen Netzen zu verbessern. Es wird oft in Kombination mit anderen Backbones verwendet, um die Leistung bei der Spurerkennung zu verbessern, indem es die relevanten Merkmale in den Eingabedaten besser hervorhebt. RESA kann die Genauigkeit von Modellen erhöhen, indem es die Aufmerksamkeit auf wichtige Bereiche der Eingabebilder lenkt, was besonders nützlich für die Spurerkennung in autonomen Fahranwendungen ist.
+
+                %Todo: Auswahl begründen
+                
             \subsubsection{Architekturen}
                 Für die verschiedenen Architekturen standen im lanedet-Repository verschiedene Konfigurationen zur Verfügung, die nachfolgend kurz zusammengefasst werden.
 
