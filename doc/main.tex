@@ -6,6 +6,10 @@
 \usepackage{pdfpages}
 \usepackage{doi}
 
+\usepackage[backend=biber,style=numeric,doi=true,url=true]{biblatex}
+\addbibresource{literatur.bib}
+
+
 \title{Echtzeitfähige Deep-Learning-basierte Spurerkennung}
 \author{Tim Alkofer, Jan-Marcel Schmidt}
 \date{Oktober 2024} %Todo
@@ -29,8 +33,7 @@
     \clearpage
     \listoffigures
     \clearpage
-    \bibliographystyle{plainnat}
-    \bibliography{literatur}
+    \printbibliography
     % \clearpage
     % \printacronyms
     \clearpage
