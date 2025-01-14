@@ -4,6 +4,7 @@
 \usepackage{subcaption}
 \usepackage{acro}
 \usepackage{pdfpages}
+\usepackage{doi}
 
 \title{Echtzeitfähige Deep-Learning-basierte Spurerkennung}
 \author{Tim Alkofer, Jan-Marcel Schmidt}
@@ -28,7 +29,7 @@
     \clearpage
     \listoffigures
     \clearpage
-    \bibliographystyle{plain}
+    \bibliographystyle{plainnat}
     \bibliography{literatur}
     % \clearpage
     % \printacronyms
@@ -80,18 +81,28 @@
             Zur Installation auf WorkingStations und Jetson können die Skripte \textit{scripts\textbackslash install\_workstation.sh} und \textit{scripts\textbackslash install\_jetson.sh} wie in der \textit{Read.me} beschrieben verwendet werden.
 
         \subsection{Aufbau neuronales Netz}
-            Das verwendete Repository lane bietet eine Reihe von verschiedenen Architekturen, Backbones und Datensätzen, die für die Spurerkennung verwendet werden können.
-            Um möglichst schnell einen Überblick über die verschiedenen Möglichkeiten zu bekommen, wurden zunächst die vorgegebenen Modelle trainiert und subjektiv getestet.
+            Das verwendete Repository lanedet bietet eine Reihe von verschiedenen Architekturen, Backbones und Datensätzen, die für die Spurerkennung verwendet werden können.
+            Um möglichst schnell einen Überblick über die verschiedenen Möglichkeiten zu bekommen, wurden zunächst die vorgegebenen Konfigurationen trainiert und dessen Modelle subjektiv bewertet.
             Dabei wurde berücksichtigt ob und wie gut die verschiedenen Modelle die Spurmarkierungen ahand von Beispielbildern aus dem Labor erkennen konnten.
             % Todo: Bilder einfügen
 
             \subsubsection{Datengrundlage}
             % --> auswahl aufgrund von bester subjektiver performance
             % nachweise für daten
-            Als Datengrundlage verlinkt LaneDet auf CULane oder alternativ TUSimple, die beide bereits annotierte Datensätze für die Spurerkennung bereitstellen. 
+                Als Datengrundlage stellt LaneDet die verbreiteten Benchmark-Datensätze TUSimple  und CULane, die beide bereits annotierte Datensätze für die Spurerkennung bereitstellen, zu Verfügung.
+                
+                Der TUSimple-Datensatz ist ein weit verbreiteter Benchmark für die Erkennung von Fahrspuren, der häufig in der Forschung zur autonomen Fahrzeugtechnologie verwendet wird. Er bietet eine Plattform zur Bewertung der Genauigkeit und Effizienz von Algorithmen zur Fahrspurerkennung unter verschiedenen Bedingungen.
+                \cite{Long2021The} \cite{Lee2021Robust} \cite{Liu2024Fast}
+
+                Der CULane-Datensatz ist ein weiterer wichtiger Benchmark, der speziell für die Erkennung von Fahrspuren in komplexen Straßenszenarien entwickelt wurde. Er enthält eine Vielzahl von Szenarien, darunter dichte Verkehrssituationen und unterschiedliche Lichtverhältnisse.
+                \cite{Long2021The} \cite{Lee2021Robust} \cite{Zhou2024Unsupervised}
+
+                Der Datensatz wird häufig verwendet, um die Robustheit von Algorithmen in herausfordernden Umgebungen zu testen, und bietet eine Plattform zur Bewertung der Fähigkeit von Modellen, Fahrspuren unter schwierigen Bedingungen zu erkennen.
+                \cite{Zhao2024StructLane} \cite{Lin2021Semi-Supervised}
+
             %Todo: Links einfügen
             % ToDo: Beschreiben wie entpackt werden muss
-                Nach einer subjektiven Bewertung der Datensätze wurde sich zunächst für TUSimple entschieden, da dieser eine bessere Performance aufwies.
+  
             %Todo Bilder einfügen
             Während erster Tests ist klar geworden, dass die Bildauflösung eine entscheidende Rolle für die Erkennung spielt. Anfangs wurde im besten Bild die unterschiedliche Farbe der Spurmarkierungen vermutet. Diese konnte jedoch durch nachbearbeitung der Bilder ausgeschlossen werden.
 
