@@ -37,3 +37,4 @@ conda/
 # Allow
 !.vscode/launch.json
 !.doc/main.tex
+!.doc/literature.bib
