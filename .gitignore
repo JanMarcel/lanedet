@@ -1,5 +1,17 @@
 # Disallow
-#doc/*
+doc/*.aux
+doc/*.bbl
+doc/*.bcf
+doc/*.blg
+doc/*.fdb_latexmk
+doc/*.fls
+doc/*.lof
+doc/*.log
+doc/*.out
+doc/*.pdf
+doc/*.xml
+doc/*.gz
+doc/*.toc
 work_dirs/
 predicts/
 output/
@@ -37,4 +49,4 @@ conda/
 # Allow
 !.vscode/launch.json
 !.doc/main.tex
-!.doc/literature.bib
+!.doc/literatur.bib
