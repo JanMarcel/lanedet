@@ -2,6 +2,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "PyDebug: Evaluation",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "lanedet/utils/tusimple_metric.py",
+            "console": "integratedTerminal",
+            "args": [
+                "./data/LinkLabel/linklabel_predictions.json",
+                "./data/LinkLabel/test_label.json",
+            ]
+        },
+        {
             "name": "PyDebug: Validate with conda",
             "type": "debugpy",
             "request": "launch",
