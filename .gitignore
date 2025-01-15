@@ -1,5 +1,5 @@
 # Disallow
-doc/*
+#doc/*
 work_dirs/
 predicts/
 output/
