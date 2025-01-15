@@ -98,7 +98,11 @@ class LaneEval(object):
             gt_lanes = gt['lanes']
             y_samples = gt['h_samples']
             try:
-                sheet: openpyxl.worksheet = wb.create_sheet(os.path.basename(os.path.dirname(raw_file)))
+                if create_excel:
+                    sheet_name = os.path.basename(os.path.dirname(raw_file)) + "_" + os.path.basename(raw_file)
+                    sheet: openpyxl.worksheet = wb.create_sheet(sheet_name)
+                else:
+                    sheet = None
                 a, p, n = LaneEval.bench(
                     pred_lanes, gt_lanes, y_samples, run_time, sheet)
 
