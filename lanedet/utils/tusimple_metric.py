@@ -1,7 +1,13 @@
+import os
 import numpy as np
+import openpyxl.workbook
+import openpyxl.worksheet
 from sklearn.linear_model import LinearRegression
 import json as json
-
+import openpyxl
+from openpyxl.utils import get_column_letter
+from openpyxl.chart import ScatterChart, Series, Reference
+from openpyxl.drawing.fill import PatternFillProperties
 
 class LaneEval(object):
     lr = LinearRegression()
@@ -26,7 +32,7 @@ class LaneEval(object):
         return np.sum(np.where(np.abs(pred - gt) < thresh, 1., 0.)) / len(gt)
 
     @staticmethod
-    def bench(pred, gt, y_samples, running_time):
+    def bench(pred, gt, y_samples, running_time, sheet: openpyxl.worksheet = None):
         if any(len(p) != len(y_samples) for p in pred):
             raise Exception('Format of lanes error.')
         if running_time > 200 or len(gt) + 2 < len(pred):
@@ -52,10 +58,18 @@ class LaneEval(object):
         s = sum(line_accs)
         if len(gt) > 4:
             s -= min(line_accs)
-        return s / max(min(4.0, len(gt)), 1.), fp / len(pred) if len(pred) > 0 else 0., fn / max(min(len(gt), 4.), 1.)
+
+        a = s / max(min(4.0, len(gt)), 1.)
+        p = fp / len(pred) if len(pred) > 0 else 0.
+        n = fn / max(min(len(gt), 4.), 1.)
+        
+        if sheet is not None:
+            LaneEval.write_excel_sheet(sheet, a, p, n, pred, gt, y_samples)
+
+        return a, p, n
 
     @staticmethod
-    def bench_one_submit(pred_file, gt_file):
+    def bench_one_submit(pred_file, gt_file, create_excel: bool = True):
         try:
             json_pred = [json.loads(line)
                          for line in open(pred_file).readlines()]
@@ -67,6 +81,8 @@ class LaneEval(object):
                 'We do not get the predictions of all the test tasks')
         gts = {l['raw_file']: l for l in json_gt}
         accuracy, fp, fn = 0., 0., 0.
+        if create_excel:
+            wb = openpyxl.Workbook()
         for pred in json_pred:
             if 'raw_file' not in pred or 'lanes' not in pred or 'run_time' not in pred:
                 raise Exception(
@@ -77,18 +93,30 @@ class LaneEval(object):
             if raw_file not in gts:
                 raise Exception(
                     'Some raw_file from your predictions do not exist in the test tasks.')
+
             gt = gts[raw_file]
             gt_lanes = gt['lanes']
             y_samples = gt['h_samples']
             try:
+                if create_excel:
+                    sheet_name = os.path.basename(os.path.dirname(raw_file)) + "_" + os.path.basename(raw_file)
+                    sheet: openpyxl.worksheet = wb.create_sheet(sheet_name)
+                else:
+                    sheet = None
                 a, p, n = LaneEval.bench(
-                    pred_lanes, gt_lanes, y_samples, run_time)
+                    pred_lanes, gt_lanes, y_samples, run_time, sheet)
+
             except BaseException as e:
                 raise Exception('Format of lanes error.')
             accuracy += a
             fp += p
             fn += n
+                
         num = len(gts)
+        
+        if create_excel:
+            wb.save(filename="evaluation.xlsx")
+
         # the first return parameter is the default ranking parameter
         return json.dumps([
             {'name': 'Accuracy', 'value': accuracy / num, 'order': 'desc'},
@@ -96,7 +124,62 @@ class LaneEval(object):
             {'name': 'FN', 'value': fn / num, 'order': 'asc'}
         ]), accuracy / num
 
+    @staticmethod
+    def write_excel_sheet(sheet: openpyxl.worksheet, accuracy: float, false_positive: float, false_negative: float, pred, gt, y_samples):
+        sheet["A1"] = "Accuracy:"
+        sheet["A2"] = "FalsePositive"
+        sheet["A3"] = "FalseNegative"
+        sheet["B1"] = accuracy
+        sheet["B2"] = false_positive
+        sheet["B3"] = false_negative
 
+        sheet["A5"] = "y_samples"
+        series  = []
+
+        y_values = Reference(sheet, min_col=1, min_row=6, max_row=6+len(y_samples), max_col=1)
+            
+        for i, y in enumerate(y_samples):
+            sheet[f"A{i + 6}"] = -y
+        
+        for i, gt_lane in enumerate(gt):
+            x_values = Reference(sheet, min_col=i + 2, min_row=6, max_row=6+len(gt_lane), max_col=i + 2)
+            series.append(Series(y_values, x_values, title="Label" + str(i)))
+            sheet.cell(row=5, column=i + 2).value = "Label" + str(i)
+            series[-1].marker.symbol = "x"
+            series[-1].marker.size = 3
+            for j, x in enumerate(gt_lane):
+                if x != -2:
+                    sheet.cell(row=j + 6, column=i + 2).value = x
+        
+        column_offset = len(gt) + 2
+        for i, pred_lane in enumerate(pred):
+            x_values = Reference(sheet, min_col=i + column_offset, min_row=6, max_row=6+len(gt_lane), max_col=i + column_offset)
+            series.append(Series(y_values, x_values, title="Lane" + str(i)))
+            series[-1].marker.symbol = "circle"
+            series[-1].marker.size = 3
+            sheet.cell(row=5, column=i + column_offset).value = "Lane" + str(i)
+            for j, x in enumerate(pred_lane):
+                if x != -2:
+                    sheet.cell(row=j + 6, column=i + column_offset).value = x
+
+        chart = ScatterChart()
+        chart.title = "Lane Evaluation"
+        chart.style = 2
+        chart.x_axis.title = "X-Values"
+        chart.y_axis.title = "Y-Samples"
+
+        chart.x_axis.scaling.min = 0
+        chart.x_axis.scaling.max = 1280
+        chart.y_axis.scaling.min = -720
+        chart.y_axis.scaling.max = 0
+
+    
+        for s in series:
+            s.graphicalProperties.line.noFill = True
+            chart.series.append(s)
+
+        # Add the chart to the worksheet
+        sheet.add_chart(chart, "D5")
 if __name__ == '__main__':
     import sys
     try:
