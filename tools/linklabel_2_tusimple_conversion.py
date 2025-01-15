@@ -2,6 +2,7 @@ import json
 import cv2
 import os
 import numpy as np
+import argparse
 
 global current_img
 
@@ -91,4 +92,13 @@ def numpy_polyfit(points, degree=None):
     polynomial = np.poly1d(coefficients)
     return polynomial
     
-convert('data/LinkLabel/project-5-at-2024-12-04-05-55-e9304360.json', 'data/LinkLabel/clips/241203/', True)
+#convert('data/LinkLabel/project-5-at-2024-12-04-05-55-e9304360.json', 'data/LinkLabel/clips/241203/', True)
+# example call assuming you are in the root directory of the project:
+# python .\tools\linklabel_2_tusimple_conversion.py --show True 'data/LinkLabel/project-5-at-2024-12-04-05-55-e9304360.json' 'data/LinkLabel/clips/241203/'              
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Convert LinkLabel to TuSimple format')
+    parser.add_argument('path', type=str, help='Path to LinkLabel JSON')
+    parser.add_argument('clip_path', type=str, help='Path directory of clips')
+    parser.add_argument('--show', type=bool, help='Show images')
+    args = parser.parse_args()
+    convert(args.path, args.clip_path, args.show)
