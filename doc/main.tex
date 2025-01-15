@@ -21,11 +21,11 @@
     
     \begin{tabbing}
     \hspace{5em} \= \\
-        Zeitraum: \> 04.2024-10.2024 \\ %Todo
+        Zeitraum: \> 04.2024-01.2025 \\ %Todo
         Hochschule: \> HTWG Konstanz \\
         Rahmen: \> Teamprojekt Autombilinformationstechnik \\
         Betreuer: \> Prof. Dr. Christopher Knievel \\
-        Abgabe: \> 26.03.2024 \\ %Todo
+        Abgabe: \> 15.01.2025 \\ %Todo
     \end{tabbing}
 
     \clearpage
@@ -70,16 +70,13 @@
     \section{Umsetzung}
         % Als grundlage diente repository x/y
         Um den Umfang des Projekts zu begrenzen, wurde das bestehendee Repository \textit{lanedet} als Grundlage verwendet.
-        %Todo: Link einfügen: https://github.com/Turoad/lanedet
+        \url{https://github.com/Turoad/lanedet}
         \textit{LaneDet is an open source lane detection toolbox based on PyTorch that aims to pull together a wide variety of state-of-the-art lane detection models.}
 
-        %\subsection{Recherche}
-            % 
         \subsection{Installation}
             Das erste Ziel der Umsetzung bestand darin das besagte Repository auf den WorkingStations des KI-Labors zu installieren, um selbst Modelle trainieren zu können.
             Anfängliche Probleme von Paketabhängigkeiten und Versionskonflikten konnten aufgelöst werden. 
             %Todo: landeDet auf HTWG Git schieben
-            % ToDo: genaue Versionen pyTorch/cuda etc
 
             %Todo: @Mars Was haben wir alles probiert bis Pytorch Cude etc. richtig installiert waren?
             Alle Änderungen können in der GIT-History nachvollzogen werden und über ergänzte Installationsskripte reproduziert werden, sodass das Projekt auch nach Abschluss des Teamprojekts weitergeführt werden kann. Letzter Stand: 15.01.2025. %Todo: Datum
@@ -114,7 +111,7 @@
             % ToDo: Beschreiben wie entpackt werden muss
 
             \subsubsection{Backbone}
-                Als Backbone für die verschiedenen Architekturen standen die nachfolgend beschriebenen  Varianten im lanedet-Repository zur Verfügung.
+                Als Backbone für die verschiedenen Architekturen standen die nachfolgend beschriebenen  Varianten im lanedet-Repository zur Verfügung. Aufgrund von lange anhaltenden Performanceproblemen wurde hauptsächlich das MobileNetV2-Backbone verwendet. In späteren Tests auf dem neuen performanteren Jetson wurde festgestellt, dass auch das ResNet-Backbone in den Größen 18 und 34 verwendet werden kann, ohne die Anforderung von 60ms Interferenzzeit zu überschreiten.
 
                 \textbf{ResNet}, insbesondere ResNet50 und ResNet101, sind bekannt für ihre hohe Genauigkeit bei der Objekterkennung, was sie zu einer beliebten Wahl für Aufgaben im Bereich des autonomen Fahrens macht. ResNet50 bietet eine gute Balance zwischen Präzision und Geschwindigkeit, während ResNet101 eine höhere Genauigkeit auf Kosten eines höheren Speicherverbrauchs und einer größeren Anzahl von Parametern bietet. ResNet-Modelle sind jedoch speicherintensiv und benötigen mehr Rechenleistung, was sie weniger geeignet für mobile oder eingebettete Anwendungen macht.
                 \cite{Chen2021Deep}
@@ -179,7 +176,7 @@
                 \caption{Auswertung 6e7e3724-test103.png}
                 \label{fig:Auswertung_6e7e3724-test_103.png}
             \end{figure}
-            Die folgende Abbildung zeigt den Verlauf des Absoluten Fehlers in cm abhängig von der y-Koordinate des Bildes auf.
+            Die folgende Abbildung \ref{fig:AbsoluterFehlerCm} zeigt den Verlauf des Absoluten Fehlers in cm abhängig von der y-Koordinate des Bildes auf.
             Dieser wurde berechnet, indem die bekannte Distanz zwischen den Spurmarkierungen von 60cm mit der Distanz zu den erkannten Spurmarkierungen verglichen wurde.
 
             \begin{equation}
@@ -193,21 +190,32 @@
                 \label{fig:AbsoluterFehlerCm}
             \end{figure}
 
-            Wie auf in der Abbildung zu erkennen ist liegt der absolute Fehler in cm bei maximal 6cm und im Durchschnitt bei knapp unter 2cm, was eine sehr gute Genauigkeit darstellt.
+            Wie auf in Abbildung \ref{fig:AbsoluterFehlerCm} zu erkennen ist liegt der absolute Fehler in cm bei maximal 6cm und im Durchschnitt bei knapp unter 2cm, was eine sehr gute Genauigkeit darstellt.
             Der erste Peak bei etwa -500 ist durch eine ungenauigkeit im Label0 zu erklären, die während der Umrechnung von den tatsächlich gelabelten Punkten auf die von TUSimple hart kodierten y-Samples entstanden ist. 
             Abgesehen davon ist im Trend erkennbar, dass der absolute Fehler in cm mit zunehmender y-Koordinate zunimmt, was durch die Perspektive des Bildes zu erklären ist.
             Die 0-Werte am Ende des Bildes sind durch zu kurze erkannte Linien zu erklären, die nicht bis zum Ende des Bildes reichen.
 
 
-        \subsection{Steuerung}
+        %\subsection{Steuerung}
             % alte Steuerung
-            % Projekt während Autonomes Fahren
+            % Projekt während Autonomes Fahren --> neue Knotenaufteilung
             % neue Steuerung
     \section{Fazit}
-        % Ergebnisse
-        % Vgl alte Spurerkennung vs neue Spurerkennung --> Bild
-        % Probleme
-        % Ausblick
+        \subsection{Ergebnisse}
+        Im folgenden Abschnitt werden die Ergebnisse des Projekts zusammengefasst und bewertet. Die Abbildungen %Todo: Referenzen
+        zeigen die von der KI erkannten Spurmarkierungen in lila/blau und die von der Kantendetektion erkannten Spurmarkierungen in orange/grün.
+        Wie Abbildung Todo zeigt, ist die Erkennung der Spurmarkierungen unter idealen Bedingungen in beiden Systemen sehr gut.
+        Der Unterschied zwischen den beiden Systemen zeigt sich jedoch in der Robustheit gegenüber schwierigen Bedingungen. So hatte die Kantendetektion Probleme mit Schatten und Spiegelungen, während die KI diese Probleme deutlich besser bewältigen konnte, wie Abbdilung Todo zeigt.
+        Damit wurde das Projektziel erreicht, eine zuverlässige Spurerkennung auch unter schwierigen Bedingungen zu ermöglichen. Auch die Echtzeitfähigkeit des Systems konnte durch den Einsatz eines neuen Jetson Nano erreicht werden, bei dem die Interferenz-Zeiten unter 60ms liegen.
+        \subsection{Probleme}
+        Entgegen der ersten Annahme, dass der Einsatz KI-basierter Spurerkennung die Gesamt-Performance des autonomen Steuerungssystems verbessern würde, konnte dies nicht bestätigt werden.
+        Als Hauptproblem wurde der Schritt zwischen erkannten Linien und Steuerung identifiziert. Auch wenn die Spurmarkierungen sehr genau erkannt wurden, war die Steuerung des Fahrzeugs nicht immer zuverlässig, sodass die Spur verlassen wurde. Sobald dann nur noch eine Spurmarkierung erkannt wurde, konnte das Fahrzeug nur selten in die Spur zurückgeführt werden.
+        Als Hauptproblem wurde die sehr starke Vereinfachung von zwei Spurmarkierungen auf eine senkrechte CenterLine identifiziert.
+        Diese bildet die reale Situation zu ungenau ab, sodass das Fahrzeug nicht immer in der Spur gehalten werden konnte.
+
+        \subsection{Ausblick}
+        Für eine bessere Steuerung des Fahrzeugs sollte die Spurerkennung um eine Spurfolge erweitert werden, um im Falle des Verlassens der Spur das Fahrzeug wieder in die Spur zu führen. So könnte besser interpretiert in welche Richtung das Fahrzeug die Spur verlassen hat und entsprechend gegengesteuert werden.
+        Außerdem sollte die Steuerung die volle Information aus den erkannten Spurmarkierungen nutzen, um das Fahrzeug besser in der Spur zu halten. So könnte zum Beispiel eine Mittellinie zwischen den beiden erkannten Spurmarkierungen berechnet werden, bei der es sich nicht mehr um eine senkrechte Linie handelt, sondern mindestens aktuellen Winkel der Spurmarkierungen berücksichtigt. Idealerweise könnte ein Polynom höheren Grades verwendet werden, um auch Kurven besser abzubilden und die Steuerung vorausschauender zu gestalten.
 
 
 \end{document}
