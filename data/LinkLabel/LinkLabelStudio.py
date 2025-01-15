@@ -5,11 +5,11 @@ import numpy as np
 
 global current_img
 
-def convert(path: str, clip_path: str):
+def convert(path: str, clip_path: str, show: bool = False):
     project: dict = readJSON(path)
     if not os.path.exists(os.path.splitext(path)[0] + '_converted.json'):
         for picture in project:
-            convert_pic(picture, path, clip_path)
+            convert_pic(picture, path, clip_path, show)
     else:
         print("Already converted")
 
@@ -17,16 +17,19 @@ def readJSON(path: str) -> dict:
     with open(path) as f:
         return json.load(f)
 
-def convert_pic(picture: dict, path: str, clip_path: str):
+def convert_pic(picture: dict, path: str, clip_path: str, show: bool):
     global current_img
     print(f'convert picture with id {picture["id"]} and name {picture["file_upload"]}')
-    current_img = cv2.imread(clip_path + picture["file_upload"])
+    if show:
+        current_img = cv2.imread(clip_path + picture["file_upload"])
     for annotation in picture["annotations"]:
-        convert_annotation(annotation, path, (clip_path + picture["file_upload"]).replace("data/LinkLabel/", ""))
-    #cv2.imshow('view', current_img)
-    #cv2.waitKey(0)
+        convert_annotation(annotation, path, (clip_path + picture["file_upload"]).replace("data/LinkLabel/", ""), show)
+    if show:
+        cv2.imshow(picture["file_upload"], current_img)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
-def convert_annotation(annotation: dict, path: str, pic_path: str):
+def convert_annotation(annotation: dict, path: str, pic_path: str, show: bool):
     print(f'\t convert annotation with id {annotation["id"]}')
     lanes = {}
     for result in annotation["result"]:
@@ -39,7 +42,8 @@ def convert_annotation(annotation: dict, path: str, pic_path: str):
             lanes[label] = []
         #collect all points sorted by label
         lanes[label].append((round(result["value"]["x"]*result["original_width"]/100), round(result["value"]["y"]*result["original_height"]/100)))
-    
+        if show:
+            cv2.circle(current_img, lanes[label][-1], radius=5, color=(0, 0, 255), thickness=-1)
 
     adjusted_lanes, h_samples = adjust_y_samples(lanes)
     #create line for target_file
@@ -53,18 +57,21 @@ def convert_annotation(annotation: dict, path: str, pic_path: str):
     
 
 def adjust_y_samples(lanes: list, y_samples: list[int]=list(range(160, 720, 10))) -> dict:
+    global current_img
     adjusted_lanes = []
     for l_name, lane in lanes.items():
         orig_y = [point[1] for point in lane]
         valid_lane = [(point[1], point[0]) for point in lane if point[0] != -2] #exchange x and y for easier x calculation
         if len(valid_lane) > 2:
-            pol = numpy_polyfit(valid_lane, 2)
+            pol = numpy_polyfit(valid_lane, 3)
             x_lane: list[int] = [-2] * len(y_samples)
             for y in y_samples:
                 if y > min(orig_y) and y < max(orig_y): # dont predict line
                     x = int(pol(y))
                     if x >= 0: # dont predict line outside of image
                         x_lane[y_samples.index(y)] = x
+                        if current_img is not None:
+                            cv2.circle(current_img, (x, y), radius=5, color=(0, 255, 0), thickness=-1)
             adjusted_lanes.append(x_lane)
     return adjusted_lanes, y_samples
 
@@ -78,4 +85,4 @@ def numpy_polyfit(points, degree=None):
     polynomial = np.poly1d(coefficients)
     return polynomial
     
-convert('data/LinkLabel/project-5-at-2024-12-04-05-55-e9304360.json', 'data/LinkLabel/clips/241203/')
+convert('data/LinkLabel/project-5-at-2024-12-04-05-55-e9304360.json', 'data/LinkLabel/clips/241203/', True)
