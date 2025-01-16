@@ -126,7 +126,7 @@ class RandomUDoffsetLABEL(object):
 @PROCESS.register_module
 class Resize(object):
     def __init__(self, size, cfg=None):
-        assert (isinstance(size, collections.Iterable) and len(size) == 2)
+        assert (isinstance(size, collections.abc.Iterable) and len(size) == 2)
         self.size = size
 
     def __call__(self, sample):
