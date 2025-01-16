@@ -36,8 +36,8 @@ class LaneATT(nn.Module):
         self.fmap_h = img_h // self.stride
         fmap_w = img_w // self.stride
         self.fmap_w = fmap_w
-        self.anchor_ys = torch.linspace(1, 0, steps=self.n_offsets, dtype=torch.float32)
-        self.anchor_cut_ys = torch.linspace(1, 0, steps=self.fmap_h, dtype=torch.float32)
+        self.anchor_ys = torch.linspace(1, 0, steps=self.n_offsets, dtype=torch.float32).cuda()
+        self.anchor_cut_ys = torch.linspace(1, 0, steps=self.fmap_h, dtype=torch.float32).cuda()
         self.anchor_feat_channels = anchor_feat_channels
 
         # Anchor angles, same ones used in Line-CNN
@@ -356,8 +356,8 @@ class LaneATT(nn.Module):
 
         # each row, first for x and second for y:
         # 2 scores, 1 start_y, start_x, 1 lenght, S coordinates, score[0] = negative prob, score[1] = positive prob
-        anchors = torch.zeros((n_anchors, 2 + 2 + 1 + self.n_offsets))
-        anchors_cut = torch.zeros((n_anchors, 2 + 2 + 1 + self.fmap_h))
+        anchors = torch.zeros((n_anchors, 2 + 2 + 1 + self.n_offsets)).cuda()
+        anchors_cut = torch.zeros((n_anchors, 2 + 2 + 1 + self.fmap_h)).cuda()
         for i, start in enumerate(starts):
             for j, angle in enumerate(angles):
                 k = i * len(angles) + j
@@ -369,10 +369,10 @@ class LaneATT(nn.Module):
     def generate_anchor(self, start, angle, cut=False):
         if cut:
             anchor_ys = self.anchor_cut_ys
-            anchor = torch.zeros(2 + 2 + 1 + self.fmap_h)
+            anchor = torch.zeros(2 + 2 + 1 + self.fmap_h).cuda()
         else:
             anchor_ys = self.anchor_ys
-            anchor = torch.zeros(2 + 2 + 1 + self.n_offsets)
+            anchor = torch.zeros(2 + 2 + 1 + self.n_offsets).cuda()
         angle = angle * math.pi / 180.  # degrees to radians
         start_x, start_y = start
         anchor[2] = 1 - start_y
