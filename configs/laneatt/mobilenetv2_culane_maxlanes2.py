@@ -13,12 +13,10 @@ featuremap_out_stride = 32
 
 num_points = 72
 max_lanes = 2
-range_start = 710
-range_end = 149
-sample_y = range(range_start, range_end, -10)
+sample_y = range(589, 230, -1)
 
 heads = dict(type='LaneATT',
-        anchors_freq_path='.cache/tusimple_anchors_freq.pt',
+        anchors_freq_path='.cache/culane_anchors_freq.pt',
         topk_anchors=1000)
 
 train_parameters = dict(
@@ -27,19 +25,19 @@ train_parameters = dict(
     nms_topk=3000
 )
 test_parameters = dict(
-    conf_threshold=0.2,
-    nms_thres=45,
+    conf_threshold=0.5,
+    nms_thres=50,
     nms_topk=max_lanes
 )
 
 optimizer = dict(
-  type = 'Adam',
+  type = 'AdamW',
   lr = 0.0003,
 )
 
-epochs = 100
+epochs = 15
 batch_size = 8
-total_iter = (3616 // batch_size) * epochs
+total_iter = (88880 // batch_size) * epochs
 scheduler = dict(
     type = 'CosineAnnealingLR',
     T_max = total_iter
@@ -48,10 +46,12 @@ scheduler = dict(
 eval_ep = 1
 save_ep = 1
 
-#ori_img_w=640
-#ori_img_h=480
-ori_img_w=1280
-ori_img_h=720
+img_norm = dict(
+    mean=[103.939, 116.779, 123.68],
+    std=[1., 1., 1.]
+)
+ori_img_w=1640
+ori_img_h=590
 img_w=640 
 img_h=360
 cut_height=0
@@ -87,15 +87,13 @@ val_process = [
     dict(type='ToTensor', keys=['img']),
 ] 
 
-dataset_path = './data/TUSimple'
-test_json_file = 'data/TUSimple/test_label.json'
-dataset_type = 'TuSimple'
-
+dataset_path = './data/CULane'
+dataset_type = 'CULane'
 dataset = dict(
     train=dict(
         type=dataset_type,
         data_root=dataset_path,
-        split='trainval',
+        split='train',
         processes=train_process,
     ),
     val=dict(
@@ -114,6 +112,6 @@ dataset = dict(
 
 
 workers = 12
-log_interval = 100
+log_interval = 1000
 seed=0
 lr_update_by_epoch = False

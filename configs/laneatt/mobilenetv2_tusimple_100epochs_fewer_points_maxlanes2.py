@@ -9,13 +9,14 @@ backbone = dict(
     out_conv=False,
 )
 featuremap_out_channel = 1280
+# featuremap_out_channel = 128
 featuremap_out_stride = 32 
+# featuremap_out_stride = 16 
 
 num_points = 72
 max_lanes = 2
-range_start = 710
-range_end = 149
-sample_y = range(range_start, range_end, -10)
+# sample_y = range(710, 150, -10)
+sample_y = range(400, 300, -20)
 
 heads = dict(type='LaneATT',
         anchors_freq_path='.cache/tusimple_anchors_freq.pt',
@@ -87,8 +88,8 @@ val_process = [
     dict(type='ToTensor', keys=['img']),
 ] 
 
-dataset_path = './data/TUSimple'
-test_json_file = 'data/TUSimple/test_label.json'
+dataset_path = './data/TUSimpleMars/TuSimple2'
+test_json_file = 'data/TUSimpleMars/TuSimple2/test_label.json'
 dataset_type = 'TuSimple'
 
 dataset = dict(

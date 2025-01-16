@@ -3,19 +3,18 @@ net = dict(
 )
 
 backbone = dict(
-    type='MobileNet',
-    net='MobileNetV2',
+    type='ResNetWrapper',
+    resnet='resnet18',
     pretrained=True,
+    replace_stride_with_dilation=[False, False, False],
     out_conv=False,
 )
-featuremap_out_channel = 1280
+featuremap_out_channel = 512 
 featuremap_out_stride = 32 
 
 num_points = 72
 max_lanes = 2
-range_start = 710
-range_end = 149
-sample_y = range(range_start, range_end, -10)
+sample_y=range(710, 150, -10)
 
 heads = dict(type='LaneATT',
         anchors_freq_path='.cache/tusimple_anchors_freq.pt',
@@ -46,10 +45,8 @@ scheduler = dict(
 )
 
 eval_ep = 1
-save_ep = 1
+save_ep = epochs
 
-#ori_img_w=640
-#ori_img_h=480
 ori_img_w=1280
 ori_img_h=720
 img_w=640 
@@ -83,12 +80,12 @@ train_process = [
 ] 
 
 val_process = [
-    dict(type='GenerateLaneLine'),
+    dict(type='GenerateLaneLine', wh=(img_w, img_h)),
     dict(type='ToTensor', keys=['img']),
-] 
+]
 
-dataset_path = './data/TUSimple'
-test_json_file = 'data/TUSimple/test_label.json'
+dataset_path = './data/tusimple'
+test_json_file = 'data/tusimple/test_label.json'
 dataset_type = 'TuSimple'
 
 dataset = dict(
