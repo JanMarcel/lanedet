@@ -79,6 +79,14 @@
             %Todo: landeDet auf HTWG Git schieben
 
             %Todo: @Mars Was haben wir alles probiert bis Pytorch Cude etc. richtig installiert waren?
+            Zunächst sind Probleme im Zusammenhang mit der wünschenswerten PyTorch Package Version und der installierten CUDA Version. Das CUDA Toolkit wird benötigt, um die Leistung der Grafikkarten (NVIDIA RTX A4000) während des Trainingsprozesses zu nutzen und die Trainingszeit dadurch deutlich zu reduzieren. Für PyTorch gibt es dafür spezielle Versionen, die für die Nutzung mit Grafikkarten über CUDA erstellt wurden. Diese Varianten werden immer für eine bestimmte CUDA Version gebaut und können inkompatibel mit anderen CUDA Versionen sein. 
+            In der Installationsanleitung des GitHub Repositories wurde PyTorch v1.8.0+cu101, also PyTorch Version 1.8.0 mit CUDA v10.1, empfohlen. Auf den Workstaions ist CUDA v12.2 installiert, wofür kein PyTorch 1.8.0 release existiert. Zwar konnten verschiedene PyTorch Versionen installiert werden, jedoch konnten mit den entsprechenden Installationen entweder die Grafikkartenleistung nicht ausgeschöpft werden oder es erschienen Fehlermeldungen, dass die Grafikkarten nicht kompatibel mit der derzeitigen PyTorch Version seien. 
+            Durch Ausprobieren und mit Hilfe des Internets konnte letztendlich die PyTorch v1.8.0+cu111 installiert werden und damit auch die Grafikkarte zum Trainieren genutzt werden. Danach traten weitere Versionskonflikte von anderen Python Packages, die für das Repository benötigt werden, auf. Diese konnten allerdings relativ zügig behoben werden.
+
+            Um die fertig trainierten CNNs auch auf dem Racecar zur Detektion benutzen kann, ist auch auf dem Jetson der Aufbau der Umgebung, wie bereits auf den Workstations, erforderlich gewesen. Das Problem einer kompatiblen PyTorch/Python/CUDA Kombination tauchte hier wieder auf. Da der Einplatinencomputer auf der ARM-Architektur (64-bit) basiert und sich somit stark von den Workstations unterscheidet, wurde die Suche nach passenden Versionen erschwert. Denn für diese Architektur gibt es deutlich weniger release builds als für die weit verbreitete x86, auf der die Workstations basieren.
+            Auf dem alten Jetson wurde nach viel Ausprobieren und sehr viel Internetrecherche in verschiedensten Foren PyTorch v1.12.0, die auf Google Drive gefunden wurde, installiert. Die Nutzung der Onboard Grafikkarte wurde mit dem Befehl \textit{jtop} während der Inferenz bestätigt.
+            Da der neue NVIDIA Jetson Orin™ Nano der Nachfolger des NVIDIA Jetson Nano ist, konnten nicht die selben Versionen von PyTorch/Python/CUDA installiert werden, sondern es waren erneut Recherche und Ausprobieren nötig, um die richtige Kombination zu finden. Zum Ende dieser Projektarbeit laufen CUDA v12.6, PyTorch v2.4.0 und Python 3.10. Die Leistungsnutzung der Grafikkarte wurde wieder durch \textit{jtop} bestätigt.
+
             Alle Änderungen können in der GIT-History nachvollzogen werden und über ergänzte Installationsskripte reproduziert werden, sodass das Projekt auch nach Abschluss des Teamprojekts weitergeführt werden kann. Letzter Stand: 15.01.2025. %Todo: Datum
             Zur Installation auf WorkingStations und Jetson können die Skripte \textit{scripts\textbackslash install\_workstation.sh} und \textit{scripts\textbackslash install\_jetson.sh} wie in der \textit{Read.me} beschrieben verwendet werden.
 
@@ -164,9 +172,12 @@
             In der Analyse wurde festgestellt, dass die größte Bottleneck im versenden der Bilder zwischen ROS-Knoten in der ROS-Version lag. In der Version Foxy gab es für python bekannte Performance Probleme wie dieser Issue zeigt: \url{https://github.com/ros2/rclpy/issues/763}.
             In neuen Tests mit ROS2 Humble und einer präziseren Messung der Interferenz-Zeit lag die Verarbeitungszeit bei etwa einer Sekunde pro Bild, was immernoch zu langsam war.
             Um dieses Problem zu lösen wurde versucht das Modell zu quantisieren, was jedoch nicht zum Erfolg führte.
+            
             Eine Konvertierung in das ONNX-Format, konnte zwar durchgeführt werden, allerdings erkannte das konvertierte Modell keine Spurmarkierungen mehr.
             %Todo mehr ausführen @Mars?
-            Nach anschaffung eines neuen Jetson Nano konnte die Performance des Modells auf dem Jetson Nano deutlich verbessert werden, sodass keine weitere Anpassung mehr nötig waren.
+            Als Vorangehensweise konnte das Konvertierungsskript eines anderen Projekts genommen werden. Da in diesem Projekt aber das Netz anders aufgebaut wurde, waren Änderungen nötig, sodass die CNNs damit umgewandelt werden können. 
+
+            Nach anschaffung eines neuen NVIDIA Jetson Orin Nano Developer Kit konnte die Performance des Modells auf dem Jetson Nano deutlich verbessert werden, sodass keine weitere Anpassung mehr nötig waren.
             Auf diesem Jetson läuft nach letztem Stand ROS2 in der Version IRON und erzielt die in \ref{fig:Modell_Auswertung} gezeigten Interferenz-Zeiten mit Bestwerten um 40ms.
 
             Die Erkennung der Spurmarkierungen funktionierte nun bereits sehr robust wie folgende Abbildung zeigt.
