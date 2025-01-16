@@ -2,13 +2,13 @@ import cv2
 import os
 import os.path as osp
 
-def imshow_lanes(img, lanes, show=False, out_file=None):
+def imshow_lanes(img, lanes, show=False, out_file=None, color=(255,0,0)):
     for lane in lanes:
         for x, y in lane:
             if x <= 0 or y <= 0:
                 continue
             x, y = int(x), int(y)
-            cv2.circle(img, (x, y), 4, (255, 0, 0), 2)
+            cv2.circle(img, (x, y), 4, color, 2)
 
     if show:
         cv2.imshow('view', img)
