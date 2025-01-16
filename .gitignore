@@ -45,6 +45,7 @@ vlanedet/**
 vlanedet_1-12-0/**
 vlanedet_1-12-0_copy/**
 conda/
+models/
 
 # Allow
 !.vscode/launch.json
