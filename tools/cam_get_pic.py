@@ -9,16 +9,20 @@ config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
 pipeline.start(config)
 
 #try:
-counter = 0
+counter = 226
 #while True:
 sleep(10)
 for i in range(1):
+# while True:
     frames = pipeline.wait_for_frames()
     color_frame = frames.get_color_frame()
 
     if color_frame:            
         cv_image = np.asanyarray(color_frame.get_data())
-        cv2.imwrite(f"test_{i}.jpg", cv_image)
+        cv2.imwrite(f"calibration_image.jpg", cv_image)
+        print(f"saved pic #{counter}")
+        counter += 1
+    sleep(1)
 
 # frames = pipeline.wait_for_frames()
 # counter = 1
